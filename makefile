@@ -3,22 +3,30 @@ SHELL := /bin/bash
 .ONESHELL:
 
 ##### Global constants #####
-VAGRANT := vagrant
 BASELINE_VAGRANT_DIR := $(ROOT_DIR)/baseline_vagrant
 BASELINE_VAGRANTFILE := $(BASELINE_VAGRANT_DIR)/Vagrantfile
 CUSTOM_VAGRANT_DIR := $(ROOT_DIR)/custom_vagrant
+# we change the directory where Vagrant stores global state because it is set to ~/.vagrant.d
+# by default, and this causes conflicts between servers as the ~ directory is mounted on NFS.
+export VAGRANT_HOME := $(ROOT_DIR)/$(CUSTOM_VAGRANT_DIR)/.vagrant.d
 LINUX_SOURCE_DIR := $(ROOT_DIR)/linux
 LINUX_BUILD_DIR := $(ROOT_DIR)/build
 CUSTOM_KERNEL_NAME := custom
-KERNEL_VERSION := 5.10.0 # https://github.com/torvalds/linux/releases/tag/v5.10
+# more about this version: https://github.com/torvalds/linux/releases/tag/v5.10
+KERNEL_VERSION := 5.10.0
 
 ##### Scripts and commands #####
+APT_INSTALL := sudo apt install -y
+APT_REMOVE := sudo apt purge -y
+VAGRANT := vagrant
+# more about the plugin: https://github.com/vagrant-libvirt/vagrant-libvirt
+VAGRANT_PLUGIN := vagrant-libvirt
 
 ##### Targets (== files) #####
 FLAG := flag
 CUSTOM_VAGRANTFILE := $(CUSTOM_VAGRANT_DIR)/Vagrantfile
 PROC_CMDLINE := $(BASELINE_VAGRANT_DIR)/proc_cmdline.txt
-LINUX_CONFIG_FROM_VAGRANT := $(BASELINE_VAGRANT_DIR)/config_from_vagrant
+BASELINE_LINUX_CONFIG := $(BASELINE_VAGRANT_DIR)/config_from_vagrant
 LINUX_MAKEFILE := $(LINUX_SOURCE_DIR)/Makefile
 LINUX_CONFIG := $(LINUX_BUILD_DIR)/.config
 VMLINUZ := /boot/vmlinuz-$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)
@@ -27,26 +35,15 @@ PERF_TOOL := /usr/lib/linux-tools/$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)/perf
 
 ##### Recipes #####
 
-.PHONY: all clean dist-clean
+.PHONY: all prerequisites clean dist-clean
 
-all: $(FLAG)
+all: $(VMLINUZ)
 
 $(FLAG): $(CUSTOM_VAGRANTFILE) $(VMLINUZ)
 	cd $(CUSTOM_VAGRANT_DIR)
 	$(VAGRANT) up --provider=libvirt
 	$(VAGRANT) ssh -c "touch $@"
 	$(VAGRANT) halt
-
-$(CUSTOM_VAGRANTFILE): $(BASELINE_VAGRANTFILE) $(PROC_CMDLINE)
-	mkdir -p $(CUSTOM_VAGRANT_DIR)
-	cp -rf $< $@
-	proc_cmdline=$$(cat $(PROC_CMDLINE))
-	[[ "$$proc_cmdline" =~ (.*)root=(.*) ]]
-	root_device=$${BASH_REMATCH[2]}
-	sed -i "s,#libvirt.kernel =,libvirt.kernel = \"$(VMLINUZ)\",g" $@
-	sed -i "s,#libvirt.initrd =,libvirt.initrd = \"$(INITRD)\",g" $@
-	sed -i "s,#libvirt.cmd_line =,libvirt.cmd_line =,g" $@
-	sed -i "s,ROOT_DEVICE,$$root_device,g" $@
 
 $(PERF_TOOL): $(LINUX_CONFIG)
 	mkdir -p $(LINUX_BUILD_DIR)/tools
@@ -63,7 +60,7 @@ $(VMLINUZ): $(LINUX_CONFIG)
 	sudo make O=$(LINUX_BUILD_DIR) INSTALL_MOD_STRIP=1 modules_install
 	sudo make O=$(LINUX_BUILD_DIR) install
 
-$(LINUX_CONFIG): $(LINUX_CONFIG_FROM_VAGRANT) $(LINUX_MAKEFILE)
+$(LINUX_CONFIG): $(BASELINE_LINUX_CONFIG) $(LINUX_MAKEFILE)
 	mkdir -p $(LINUX_BUILD_DIR)
 	# take the config of the vagrant distribution as the baseline
 	cp -f $< $@
@@ -75,7 +72,7 @@ $(LINUX_CONFIG): $(LINUX_CONFIG_FROM_VAGRANT) $(LINUX_MAKEFILE)
 	yes '' | make O=$(LINUX_BUILD_DIR) oldconfig # sanitize the .config file
 
 # prevent this target from running concurrently with $(PROC_CMDLINE) by depending on it
-$(LINUX_CONFIG_FROM_VAGRANT): $(BASELINE_VAGRANTFILE) $(PROC_CMDLINE)
+$(BASELINE_LINUX_CONFIG): $(PROC_CMDLINE)
 	cd $(BASELINE_VAGRANT_DIR)
 	$(VAGRANT) up --provider=libvirt
 	# use bash single quotes to avoid the $(uname -r) expansion in the host
@@ -83,7 +80,18 @@ $(LINUX_CONFIG_FROM_VAGRANT): $(BASELINE_VAGRANTFILE) $(PROC_CMDLINE)
 	$(VAGRANT) halt
 	dos2unix $@
 
-$(PROC_CMDLINE): $(BASELINE_VAGRANTFILE)
+$(CUSTOM_VAGRANTFILE): $(PROC_CMDLINE)
+	mkdir -p $(CUSTOM_VAGRANT_DIR)
+	cp -rf $(BASELINE_VAGRANTFILE) $@
+	proc_cmdline=$$(cat $(PROC_CMDLINE))
+	[[ "$$proc_cmdline" =~ (.*)root=(.*) ]]
+	root_device=$${BASH_REMATCH[2]}
+	sed -i "s,#libvirt.kernel =,libvirt.kernel = \"$(VMLINUZ)\",g" $@
+	sed -i "s,#libvirt.initrd =,libvirt.initrd = \"$(INITRD)\",g" $@
+	sed -i "s,#libvirt.cmd_line =,libvirt.cmd_line =,g" $@
+	sed -i "s,ROOT_DEVICE,$$root_device,g" $@
+
+$(PROC_CMDLINE):
 	# The Vagrantfile defines the configuration of the VM that resides in the current directory.
 	# Fresh Vagrantfiles can be created through: vagrant init generic/ubuntu2004
 	# where generic/ubuntu2004 is the box name (all boxes are at: https://app.vagrantup.com/boxes/search)
@@ -93,13 +101,35 @@ $(PROC_CMDLINE): $(BASELINE_VAGRANTFILE)
 	$(VAGRANT) halt
 	dos2unix $@
 
-$(BASELINE_VAGRANTFILE): ; # empty recipe to prevent make from looking for an implicit rule
-
 $(LINUX_MAKEFILE):
 	git submodule update --init --progress
 
+prerequisites:
+	$(APT_INSTALL) libvirt-bin libvirt-dev qemu-kvm
+	sudo modprobe kvm kvm_intel
+	kvm-ok
+	for group in "kvm libvirtd"; do
+		if [[ "$$(groups)" == *"$$group"* ]]; then
+	    	echo "The user $(USER) belongs to the $$group group"
+		else
+	    	echo "The user $(USER) does not belong to the $$group group"
+	    	echo "Adding it via:"
+	    	sudo usermod -a -G $$group $(USER)
+	    	echo "Please logout and login to belong to the new groups"
+	    	exit -1 # stop the script
+		fi
+	done
+	$(APT_INSTALL) vagrant
+	if [[ $$($(VAGRANT) plugin list) == *"$(VAGRANT_PLUGIN)"* ]] ; then
+	    echo "$(VAGRANT_PLUGIN) is installed"
+	else
+	    echo "$(VAGRANT_PLUGIN) is currently not installed"
+	    echo "going to install it via:"
+	    $< plugin install $(VAGRANT_PLUGIN)
+	fi
+
 clean:
-	rm -f $(PROC_CMDLINE) $(LINUX_CONFIG_FROM_VAGRANT)
+	rm -f $(PROC_CMDLINE) $(BASELINE_LINUX_CONFIG)
 	cd $(ROOT_DIR)/$(CUSTOM_VAGRANT_DIR)
 	# first destroy the VM
 	vagrant destroy --force
