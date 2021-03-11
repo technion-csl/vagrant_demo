@@ -23,7 +23,7 @@ VAGRANT := vagrant
 VAGRANT_PLUGIN := vagrant-libvirt
 
 ##### Targets (== files) #####
-FLAG := flag
+FLAG := $(ROOT_DIR)/flag
 CUSTOM_VAGRANTFILE := $(CUSTOM_VAGRANT_DIR)/Vagrantfile
 PROC_CMDLINE := $(BASELINE_VAGRANT_DIR)/proc_cmdline.txt
 BASELINE_LINUX_CONFIG := $(BASELINE_VAGRANT_DIR)/config_from_vagrant
@@ -37,12 +37,12 @@ PERF_TOOL := /usr/lib/linux-tools/$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)/perf
 
 .PHONY: all baseline-vagrant-ssh prerequisites clean clean-baseline clean-custom dist-clean
 
-all: $(VMLINUZ)
+all: $(FLAG)
 
 $(FLAG): $(CUSTOM_VAGRANTFILE) $(VMLINUZ)
 	cd $(CUSTOM_VAGRANT_DIR)
 	$(VAGRANT) up --provider=libvirt
-	$(VAGRANT) ssh -c "touch $@"
+	$(VAGRANT) ssh -c "hostname && uname -r && perf --version" > $@
 	$(VAGRANT) halt
 
 $(PERF_TOOL): $(LINUX_CONFIG)
@@ -77,6 +77,7 @@ $(CUSTOM_VAGRANTFILE): $(PROC_CMDLINE)
 	proc_cmdline=$$(cat $(PROC_CMDLINE))
 	[[ "$$proc_cmdline" =~ (.*)root=(.*) ]]
 	root_device=$${BASH_REMATCH[2]}
+	sed -i "s,baseline-kernel,custom-kernel,g" $@
 	sed -i "s,#libvirt.kernel =,libvirt.kernel = \"$(VMLINUZ)\",g" $@
 	sed -i "s,#libvirt.initrd =,libvirt.initrd = \"$(INITRD)\",g" $@
 	sed -i "s,#libvirt.cmd_line =,libvirt.cmd_line =,g" $@
