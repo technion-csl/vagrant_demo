@@ -6,8 +6,8 @@ SHELL := /bin/bash
 BASELINE_VAGRANT_DIR := $(ROOT_DIR)/baseline_vagrant
 BASELINE_VAGRANTFILE := $(BASELINE_VAGRANT_DIR)/Vagrantfile
 CUSTOM_VAGRANT_DIR := $(ROOT_DIR)/custom_vagrant
-# we change the directory where Vagrant stores global state because it is set to ~/.vagrant.d
-# by default, and this causes conflicts between servers as the ~ directory is mounted on NFS.
+# change the directory where Vagrant stores global state because it is set to ~/.vagrant.d by default,
+# and this causes conflicts between servers as the ~ directory is mounted on NFS.
 export VAGRANT_HOME := $(ROOT_DIR)/$(CUSTOM_VAGRANT_DIR)/.vagrant.d
 LINUX_SOURCE_DIR := $(ROOT_DIR)/linux
 LINUX_BUILD_DIR := $(ROOT_DIR)/build
@@ -71,15 +71,6 @@ $(LINUX_CONFIG): $(BASELINE_LINUX_CONFIG) $(LINUX_MAKEFILE)
 	./scripts/config --file $@ --set-str LOCALVERSION "-$(CUSTOM_KERNEL_NAME)"
 	yes '' | make O=$(LINUX_BUILD_DIR) oldconfig # sanitize the .config file
 
-# prevent this target from running concurrently with $(PROC_CMDLINE) by depending on it
-$(BASELINE_LINUX_CONFIG): $(PROC_CMDLINE)
-	cd $(BASELINE_VAGRANT_DIR)
-	$(VAGRANT) up --provider=libvirt
-	# use bash single quotes to avoid the $(uname -r) expansion in the host
-	$(VAGRANT) ssh -c 'cat /boot/config-$$(uname -r)' > $@
-	$(VAGRANT) halt
-	dos2unix $@
-
 $(CUSTOM_VAGRANTFILE): $(PROC_CMDLINE)
 	mkdir -p $(CUSTOM_VAGRANT_DIR)
 	cp -rf $(BASELINE_VAGRANTFILE) $@
@@ -90,6 +81,19 @@ $(CUSTOM_VAGRANTFILE): $(PROC_CMDLINE)
 	sed -i "s,#libvirt.initrd =,libvirt.initrd = \"$(INITRD)\",g" $@
 	sed -i "s,#libvirt.cmd_line =,libvirt.cmd_line =,g" $@
 	sed -i "s,ROOT_DEVICE,$$root_device,g" $@
+
+# change the working directory for baseline vagrant
+$(PROC_CMDLINE) $(BASELINE_LINUX_CONFIG) baseline-vagrant-ssh: \
+	export VAGRANT_HOME := $(ROOT_DIR)/$(BASELINE_VAGRANT_DIR)/.vagrant.d
+
+# prevent this target from running concurrently with $(PROC_CMDLINE) by depending on it
+$(BASELINE_LINUX_CONFIG): $(PROC_CMDLINE)
+	cd $(BASELINE_VAGRANT_DIR)
+	$(VAGRANT) up --provider=libvirt
+	# use bash single quotes to avoid the $(uname -r) expansion in the host
+	$(VAGRANT) ssh -c 'cat /boot/config-$$(uname -r)' > $@
+	$(VAGRANT) halt
+	dos2unix $@
 
 $(PROC_CMDLINE):
 	cd $(BASELINE_VAGRANT_DIR)
