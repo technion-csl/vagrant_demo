@@ -8,7 +8,7 @@ BASELINE_VAGRANTFILE := $(BASELINE_VAGRANT_DIR)/Vagrantfile
 CUSTOM_VAGRANT_DIR := $(ROOT_DIR)/custom_vagrant
 # change the directory where Vagrant stores global state because it is set to ~/.vagrant.d by default,
 # and this causes conflicts between servers as the ~ directory is mounted on NFS.
-export VAGRANT_HOME := $(ROOT_DIR)/$(CUSTOM_VAGRANT_DIR)/.vagrant.d
+export VAGRANT_HOME := $(ROOT_DIR)/.vagrant.d
 LINUX_SOURCE_DIR := $(ROOT_DIR)/linux
 LINUX_BUILD_DIR := $(ROOT_DIR)/build
 CUSTOM_KERNEL_NAME := custom
@@ -35,7 +35,7 @@ PERF_TOOL := /usr/lib/linux-tools/$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)/perf
 
 ##### Recipes #####
 
-.PHONY: all baseline-vagrant-ssh prerequisites clean dist-clean
+.PHONY: all baseline-vagrant-ssh prerequisites clean clean-baseline clean-custom dist-clean
 
 all: $(VMLINUZ)
 
@@ -82,10 +82,6 @@ $(CUSTOM_VAGRANTFILE): $(PROC_CMDLINE)
 	sed -i "s,#libvirt.cmd_line =,libvirt.cmd_line =,g" $@
 	sed -i "s,ROOT_DEVICE,$$root_device,g" $@
 
-# change the working directory for baseline vagrant
-$(PROC_CMDLINE) $(BASELINE_LINUX_CONFIG) baseline-vagrant-ssh: \
-	export VAGRANT_HOME := $(ROOT_DIR)/$(BASELINE_VAGRANT_DIR)/.vagrant.d
-
 # prevent this target from running concurrently with $(PROC_CMDLINE) by depending on it
 $(BASELINE_LINUX_CONFIG): $(PROC_CMDLINE)
 	cd $(BASELINE_VAGRANT_DIR)
@@ -95,14 +91,14 @@ $(BASELINE_LINUX_CONFIG): $(PROC_CMDLINE)
 	$(VAGRANT) halt
 	dos2unix $@
 
-$(PROC_CMDLINE):
+$(PROC_CMDLINE): | prerequisites
 	cd $(BASELINE_VAGRANT_DIR)
 	$(VAGRANT) up --provider=libvirt
 	$(VAGRANT) ssh -c "cat /proc/cmdline" > $@
 	$(VAGRANT) halt
 	dos2unix $@
 
-baseline-vagrant-ssh:
+baseline-vagrant-ssh: | prerequisites
 	# The Vagrantfile defines the configuration of the VM that resides in the current directory.
 	# Fresh Vagrantfiles can be created through: vagrant init generic/ubuntu2004
 	# where generic/ubuntu2004 is the box name (all boxes are at: https://app.vagrantup.com/boxes/search)
@@ -138,15 +134,19 @@ prerequisites:
 	    $(VAGRANT) plugin install $(VAGRANT_PLUGIN)
 	fi
 
-clean:
+clean: clean-baseline clean-custom
 	rm -f $(PROC_CMDLINE) $(BASELINE_LINUX_CONFIG)
-	cd $(ROOT_DIR)/$(CUSTOM_VAGRANT_DIR)
-	# first destroy the VM
-	vagrant destroy --force
-	# only then, delete the Vagrantfile that defines this VM
 	rm -rf $(CUSTOM_VAGRANTFILE)
 	rm -rf $(LINUX_BUILD_DIR)
 	cd $(LINUX_SOURCE_DIR) && make mrproper
+
+clean-baseline:
+	cd $(BASELINE_VAGRANT_DIR)
+	vagrant destroy --force
+
+custom-baseline:
+	cd $(CUSTOM_VAGRANT_DIR)
+	vagrant destroy --force
 
 dist-clean: clean
 	vagrant box prune --force # remove old versions of installed boxes
