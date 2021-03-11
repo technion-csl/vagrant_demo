@@ -35,7 +35,7 @@ PERF_TOOL := /usr/lib/linux-tools/$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)/perf
 
 ##### Recipes #####
 
-.PHONY: all prerequisites clean dist-clean
+.PHONY: all baseline-vagrant-ssh prerequisites clean dist-clean
 
 all: $(VMLINUZ)
 
@@ -92,14 +92,20 @@ $(CUSTOM_VAGRANTFILE): $(PROC_CMDLINE)
 	sed -i "s,ROOT_DEVICE,$$root_device,g" $@
 
 $(PROC_CMDLINE):
-	# The Vagrantfile defines the configuration of the VM that resides in the current directory.
-	# Fresh Vagrantfiles can be created through: vagrant init generic/ubuntu2004
-	# where generic/ubuntu2004 is the box name (all boxes are at: https://app.vagrantup.com/boxes/search)
 	cd $(BASELINE_VAGRANT_DIR)
 	$(VAGRANT) up --provider=libvirt
 	$(VAGRANT) ssh -c "cat /proc/cmdline" > $@
 	$(VAGRANT) halt
 	dos2unix $@
+
+baseline-vagrant-ssh:
+	# The Vagrantfile defines the configuration of the VM that resides in the current directory.
+	# Fresh Vagrantfiles can be created through: vagrant init generic/ubuntu2004
+	# where generic/ubuntu2004 is the box name (all boxes are at: https://app.vagrantup.com/boxes/search)
+	cd $(BASELINE_VAGRANT_DIR)
+	$(VAGRANT) up --provider=libvirt
+	$(VAGRANT) ssh
+	$(VAGRANT) halt
 
 $(LINUX_MAKEFILE):
 	git submodule update --init --progress
@@ -125,7 +131,7 @@ prerequisites:
 	else
 	    echo "$(VAGRANT_PLUGIN) is currently not installed"
 	    echo "going to install it via:"
-	    $< plugin install $(VAGRANT_PLUGIN)
+	    $(VAGRANT) plugin install $(VAGRANT_PLUGIN)
 	fi
 
 clean:
