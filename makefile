@@ -36,27 +36,27 @@ INSTALLED_PERF_TOOL := /usr/lib/linux-tools/$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NA
 
 ##### Recipes #####
 
-.PHONY: all baseline-vagrant-ssh prerequisites clean clean-baseline clean-custom dist-clean
+.PHONY: all baseline-vagrant-ssh custom-vagrant-ssh prerequisites \
+	clean clean-baseline clean-custom dist-clean
 
 all: $(FLAG)
 
-$(FLAG): $(CUSTOM_VAGRANTFILE) $(VMLINUZ) $(PERF_TOOL)
+$(FLAG): $(CUSTOM_VAGRANTFILE) $(VMLINUZ) $(INSTALLED_PERF_TOOL)
 	cd $(CUSTOM_VAGRANT_DIR)
 	$(VAGRANT) up --provider=libvirt
-	$(VAGRANT) upload $(PERF_TOOL) /home/vagrant
-	$(VAGRANT) ssh -c "hostname && uname -r && ls -hl /home/vagrant/perf && perf --version" > $@
+	$(VAGRANT) ssh -c "cd make -C $(LINUX_SOURCE_DIR)/tools/perf O=$(LINUX_BUILD_DIR)/tools/perf prefix=/usr/ install"
+	$(VAGRANT) ssh -c "uname -a && perf --version" > $@
 	$(VAGRANT) halt
 
 $(INSTALLED_PERF_TOOL): $(PERF_TOOL)
-	mkdir -p $(dir $@)
-	cp -rf $< $@
-
-$(PERF_TOOL): $(LINUX_CONFIG)
-	mkdir -p $(dir $@)
-	make -C $(LINUX_SOURCE_DIR)/tools/perf O=$(dir $@)
+	make -C $(LINUX_SOURCE_DIR)/tools/perf O=$(LINUX_BUILD_DIR)/tools/perf prefix=/usr/ install
 	# In principle, every linux version requires its own perf, so we have to build it from source.
 	# In practice, an older version of perf will usually work, so it's enough to:
 	# sudo ln -s /usr/lib/linux-tools/$(uname -r) /usr/lib/linux-tools/$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)
+
+$(PERF_TOOL): $(LINUX_CONFIG)
+	mkdir -p $(dir $@)
+	make -C $(LINUX_SOURCE_DIR)/tools/perf O=$(LINUX_BUILD_DIR)/tools/perf
 
 $(VMLINUZ): $(LINUX_CONFIG)
 	cd $(LINUX_SOURCE_DIR)
@@ -113,6 +113,12 @@ baseline-vagrant-ssh: | prerequisites
 	$(VAGRANT) ssh
 	$(VAGRANT) halt
 
+custom-vagrant-ssh: $(CUSTOM_VAGRANTFILE) $(VMLINUZ)
+	cd $(CUSTOM_VAGRANT_DIR)
+	$(VAGRANT) up --provider=libvirt
+	$(VAGRANT) ssh
+	$(VAGRANT) halt
+
 $(LINUX_MAKEFILE):
 	git submodule update --init --progress
 
@@ -150,7 +156,7 @@ clean-baseline:
 	cd $(BASELINE_VAGRANT_DIR)
 	vagrant destroy --force
 
-custom-baseline:
+clean-custom:
 	cd $(CUSTOM_VAGRANT_DIR)
 	vagrant destroy --force
 
