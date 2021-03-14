@@ -142,7 +142,7 @@ prerequisites:
 
 clean: clean-baseline clean-custom
 	rm -f $(PROC_CMDLINE) $(BASELINE_LINUX_CONFIG)
-	rm -rf $(CUSTOM_VAGRANTFILE)
+	rm -rf $(CUSTOM_VAGRANT_DIR)
 	rm -rf $(LINUX_BUILD_DIR)
 	cd $(LINUX_SOURCE_DIR) && make mrproper
 
@@ -160,4 +160,5 @@ dist-clean: clean
 	# >> virsh list --all
 	# >> virsh undefine <NAME>
 	sudo ./uninstallKernel.sh $(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)
+	sudo rm -f $(INSTALLED_PERF_TOOL)
 
