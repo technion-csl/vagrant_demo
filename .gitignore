@@ -1,4 +1,8 @@
+.vagrant.d/
 baseline_vagrant/.vagrant/
 baseline_vagrant/config_from_vagrant
 baseline_vagrant/proc_cmdline.txt
+custom_vagrant/
 build/
+flag
+

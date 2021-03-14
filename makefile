@@ -31,7 +31,8 @@ LINUX_MAKEFILE := $(LINUX_SOURCE_DIR)/Makefile
 LINUX_CONFIG := $(LINUX_BUILD_DIR)/.config
 VMLINUZ := /boot/vmlinuz-$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)
 INITRD := /boot/initrd.img-$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)
-PERF_TOOL := /usr/lib/linux-tools/$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)/perf
+PERF_TOOL := $(LINUX_BUILD_DIR)/tools/perf/perf
+INSTALLED_PERF_TOOL := /usr/lib/linux-tools/$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)/perf
 
 ##### Recipes #####
 
@@ -39,16 +40,20 @@ PERF_TOOL := /usr/lib/linux-tools/$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)/perf
 
 all: $(FLAG)
 
-$(FLAG): $(CUSTOM_VAGRANTFILE) $(VMLINUZ)
+$(FLAG): $(CUSTOM_VAGRANTFILE) $(VMLINUZ) $(PERF_TOOL)
 	cd $(CUSTOM_VAGRANT_DIR)
 	$(VAGRANT) up --provider=libvirt
-	$(VAGRANT) ssh -c "hostname && uname -r && perf --version" > $@
+	$(VAGRANT) upload $(PERF_TOOL) /home/vagrant
+	$(VAGRANT) ssh -c "hostname && uname -r && ls -hl /home/vagrant/perf && perf --version" > $@
 	$(VAGRANT) halt
 
+$(INSTALLED_PERF_TOOL): $(PERF_TOOL)
+	mkdir -p $(dir $@)
+	cp -rf $< $@
+
 $(PERF_TOOL): $(LINUX_CONFIG)
-	mkdir -p $(LINUX_BUILD_DIR)/tools
-	cd $(LINUX_SOURCE_DIR)/tools
-	sudo make O=$(LINUX_BUILD_DIR)/tools prefix=/usr perf_install
+	mkdir -p $(dir $@)
+	make -C $(LINUX_SOURCE_DIR)/tools/perf O=$(dir $@)
 	# In principle, every linux version requires its own perf, so we have to build it from source.
 	# In practice, an older version of perf will usually work, so it's enough to:
 	# sudo ln -s /usr/lib/linux-tools/$(uname -r) /usr/lib/linux-tools/$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)
