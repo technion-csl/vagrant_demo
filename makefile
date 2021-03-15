@@ -3,9 +3,11 @@ SHELL := /bin/bash
 .ONESHELL:
 
 ##### Global constants #####
-BASELINE_VAGRANT_DIR := $(ROOT_DIR)/baseline_vagrant
+BASELINE_VAGRANT_NAME := baseline_vagrant
+BASELINE_VAGRANT_DIR := $(ROOT_DIR)/$(BASELINE_VAGRANT_NAME)
 BASELINE_VAGRANTFILE := $(BASELINE_VAGRANT_DIR)/Vagrantfile
-CUSTOM_VAGRANT_DIR := $(ROOT_DIR)/custom_vagrant
+CUSTOM_VAGRANT_NAME := custom_vagrant
+CUSTOM_VAGRANT_DIR := $(ROOT_DIR)/$(CUSTOM_VAGRANT_NAME)
 # change the directory where Vagrant stores global state because it is set to ~/.vagrant.d by default,
 # and this causes conflicts between servers as the ~ directory is mounted on NFS.
 export VAGRANT_HOME := $(ROOT_DIR)/.vagrant.d
@@ -49,7 +51,7 @@ $(FLAG): $(CUSTOM_VAGRANTFILE) $(VMLINUZ) $(INSTALLED_PERF_TOOL)
 	$(VAGRANT) halt
 
 $(INSTALLED_PERF_TOOL): $(PERF_TOOL)
-	make -C $(LINUX_SOURCE_DIR)/tools/perf O=$(LINUX_BUILD_DIR)/tools/perf prefix=/usr/ install
+	sudo make -C $(LINUX_SOURCE_DIR)/tools/perf O=$(LINUX_BUILD_DIR)/tools/perf prefix=/usr install
 	# In principle, every linux version requires its own perf, so we have to build it from source.
 	# In practice, an older version of perf will usually work, so it's enough to:
 	# sudo ln -s /usr/lib/linux-tools/$(uname -r) /usr/lib/linux-tools/$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)
@@ -82,7 +84,7 @@ $(CUSTOM_VAGRANTFILE): $(PROC_CMDLINE)
 	proc_cmdline=$$(cat $(PROC_CMDLINE))
 	[[ "$$proc_cmdline" =~ (.*)root=(.*) ]]
 	root_device=$${BASH_REMATCH[2]}
-	sed -i "s,baseline-kernel,custom-kernel,g" $@
+	sed -i "s,$(BASELINE_VAGRANT_NAME),$(CUSTOM_KERNEL_NAME),g" $@
 	sed -i "s,#libvirt.kernel =,libvirt.kernel = \"$(VMLINUZ)\",g" $@
 	sed -i "s,#libvirt.initrd =,libvirt.initrd = \"$(INITRD)\",g" $@
 	sed -i "s,#libvirt.cmd_line =,libvirt.cmd_line =,g" $@
@@ -109,7 +111,7 @@ baseline-vagrant-ssh: | prerequisites
 	# Fresh Vagrantfiles can be created through: vagrant init generic/ubuntu2004
 	# where generic/ubuntu2004 is the box name (all boxes are at: https://app.vagrantup.com/boxes/search)
 	cd $(BASELINE_VAGRANT_DIR)
-	$(VAGRANT) up --provider=libvirt
+	$(VAGRANT) up --provider=libvirt --debug
 	$(VAGRANT) ssh
 	$(VAGRANT) halt
 
@@ -146,25 +148,31 @@ prerequisites:
 	    $(VAGRANT) plugin install $(VAGRANT_PLUGIN)
 	fi
 
+# ignore errors when executing these two recipes (the VMs may not exist so deleting them may fail)
+.IGNORE: clean-baseline clean-custom
+
+clean-baseline:
+	cd $(BASELINE_VAGRANT_DIR)
+	$(VAGRANT) halt
+	$(VAGRANT) destroy --force
+	# delete the VM manually through virsh in case vagrant destroy doesn't work
+	virsh undefine $(BASELINE_VAGRANT_NAME)
+
+clean-custom:
+	cd $(CUSTOM_VAGRANT_DIR)
+	$(VAGRANT) halt
+	$(VAGRANT) destroy --force
+	# delete the VM manually through virsh in case vagrant destroy doesn't work
+	virsh undefine $(CUSTOM_VAGRANT_NAME)
+
 clean: clean-baseline clean-custom
 	rm -f $(PROC_CMDLINE) $(BASELINE_LINUX_CONFIG)
 	rm -rf $(CUSTOM_VAGRANT_DIR)
 	rm -rf $(LINUX_BUILD_DIR)
 	cd $(LINUX_SOURCE_DIR) && make mrproper
 
-clean-baseline:
-	cd $(BASELINE_VAGRANT_DIR)
-	vagrant destroy --force
-
-clean-custom:
-	cd $(CUSTOM_VAGRANT_DIR)
-	vagrant destroy --force
-
 dist-clean: clean
 	vagrant box prune --force # remove old versions of installed boxes
-	# in case vagrant destroy doesn't work, try deleting the VM manually through virsh:
-	# >> virsh list --all
-	# >> virsh undefine <NAME>
 	sudo ./uninstallKernel.sh $(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)
 	sudo rm -f $(INSTALLED_PERF_TOOL)
 
