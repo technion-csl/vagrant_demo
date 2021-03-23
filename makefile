@@ -128,13 +128,13 @@ prerequisites:
 	$(APT_INSTALL) libvirt-bin libvirt-dev qemu-kvm
 	sudo modprobe kvm kvm_intel
 	kvm-ok
-	for group in "kvm libvirtd"; do
+	for group in kvm libvirtd; do
 		if [[ "$$(groups)" == *"$$group"* ]]; then
 			echo "The user $(USER) belongs to the $$group group"
 		else
 			echo "The user $(USER) does not belong to the $$group group"
 			echo "Adding it via:"
-			sudo adduser $$group $(USER)
+			sudo adduser $(USER) $$group
 			echo "Please logout and login to belong to the new groups"
 			exit -1 # stop the script
 		fi
