@@ -38,7 +38,7 @@ INSTALLED_PERF_TOOL := /usr/lib/linux-tools/$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NA
 
 ##### Recipes #####
 
-.PHONY: all baseline-vagrant-ssh custom-vagrant-ssh prerequisites \
+.PHONY: all ssh-baseline-vagrant ssh-custom-vagrant prerequisites \
 	clean clean-baseline clean-custom dist-clean
 
 all: $(FLAG)
@@ -106,7 +106,7 @@ $(PROC_CMDLINE): | prerequisites
 	$(VAGRANT) halt
 	dos2unix $@
 
-baseline-vagrant-ssh: | prerequisites
+ssh-baseline-vagrant: | prerequisites
 	# The Vagrantfile defines the configuration of the VM that resides in the current directory.
 	# Fresh Vagrantfiles can be created through: vagrant init generic/ubuntu2004
 	# where generic/ubuntu2004 is the box name (all boxes are at: https://app.vagrantup.com/boxes/search)
@@ -115,7 +115,7 @@ baseline-vagrant-ssh: | prerequisites
 	$(VAGRANT) ssh
 	$(VAGRANT) halt
 
-custom-vagrant-ssh: $(CUSTOM_VAGRANTFILE) $(VMLINUZ)
+ssh-custom-vagrant: $(CUSTOM_VAGRANTFILE) $(VMLINUZ)
 	cd $(CUSTOM_VAGRANT_DIR)
 	$(VAGRANT) up --provider=libvirt
 	$(VAGRANT) ssh
@@ -130,22 +130,22 @@ prerequisites:
 	kvm-ok
 	for group in "kvm libvirtd"; do
 		if [[ "$$(groups)" == *"$$group"* ]]; then
-	    	echo "The user $(USER) belongs to the $$group group"
+			echo "The user $(USER) belongs to the $$group group"
 		else
-	    	echo "The user $(USER) does not belong to the $$group group"
-	    	echo "Adding it via:"
-	    	sudo usermod -a -G $$group $(USER)
-	    	echo "Please logout and login to belong to the new groups"
-	    	exit -1 # stop the script
+			echo "The user $(USER) does not belong to the $$group group"
+			echo "Adding it via:"
+			sudo adduser $$group $(USER)
+			echo "Please logout and login to belong to the new groups"
+			exit -1 # stop the script
 		fi
 	done
 	$(APT_INSTALL) vagrant
 	if [[ $$($(VAGRANT) plugin list) == *"$(VAGRANT_PLUGIN)"* ]] ; then
-	    echo "$(VAGRANT_PLUGIN) is installed"
-	else
-	    echo "$(VAGRANT_PLUGIN) is currently not installed"
-	    echo "going to install it via:"
-	    $(VAGRANT) plugin install $(VAGRANT_PLUGIN)
+		echo "$(VAGRANT_PLUGIN) is installed"
+		else
+		echo "$(VAGRANT_PLUGIN) is currently not installed"
+		echo "going to install it via:"
+		$(VAGRANT) plugin install $(VAGRANT_PLUGIN)
 	fi
 
 # ignore errors when executing these two recipes (the VMs may not exist so deleting them may fail)
