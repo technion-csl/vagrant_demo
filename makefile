@@ -84,7 +84,7 @@ $(CUSTOM_VAGRANTFILE): $(PROC_CMDLINE)
 	proc_cmdline=$$(cat $(PROC_CMDLINE))
 	[[ "$$proc_cmdline" =~ (.*)root=(.*) ]]
 	root_device=$${BASH_REMATCH[2]}
-	sed -i "s,$(BASELINE_VAGRANT_NAME),$(CUSTOM_KERNEL_NAME),g" $@
+	sed -i "s,$(BASELINE_VAGRANT_NAME),$(CUSTOM_VAGRANT_NAME),g" $@
 	sed -i "s,#libvirt.kernel =,libvirt.kernel = \"$(VMLINUZ)\",g" $@
 	sed -i "s,#libvirt.initrd =,libvirt.initrd = \"$(INITRD)\",g" $@
 	sed -i "s,#libvirt.cmd_line =,libvirt.cmd_line =,g" $@
@@ -117,7 +117,7 @@ ssh-baseline-vagrant: | prerequisites
 
 ssh-custom-vagrant: $(CUSTOM_VAGRANTFILE) $(VMLINUZ)
 	cd $(CUSTOM_VAGRANT_DIR)
-	$(VAGRANT) up --provider=libvirt
+	$(VAGRANT) up --provider=libvirt --debug
 	$(VAGRANT) ssh
 	$(VAGRANT) halt
 
