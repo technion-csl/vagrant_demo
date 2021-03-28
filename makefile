@@ -14,8 +14,8 @@ export VAGRANT_HOME := $(ROOT_DIR)/.vagrant.d
 LINUX_SOURCE_DIR := $(ROOT_DIR)/linux
 LINUX_BUILD_DIR := $(ROOT_DIR)/build
 CUSTOM_KERNEL_NAME := custom
-# choose a specific linux kernel version with "cd linux && git checkout tags/v5.10"
-KERNEL_VERSION := 5.10.0
+# choose a specific linux kernel version with "cd linux && git checkout tags/v5.4"
+KERNEL_VERSION := 5.4.0
 # we can also extract the kernel version from the linux source tree via "cd linux && make kernelversion"
 # but this is problematic because $(LINUX_SOURCE_DIR) is empty right after "git clone"
 
@@ -64,7 +64,7 @@ $(PERF_TOOL): $(LINUX_CONFIG)
 
 $(VMLINUZ): $(LINUX_CONFIG)
 	cd $(LINUX_SOURCE_DIR)
-	make -j 8 O=$(LINUX_BUILD_DIR)
+	make --jobs=8 O=$(LINUX_BUILD_DIR)
 	# INSTALL_MOD_STRIP strips the modules and reduces the initrd size by ~10x
 	sudo make O=$(LINUX_BUILD_DIR) INSTALL_MOD_STRIP=1 modules_install
 	sudo make O=$(LINUX_BUILD_DIR) install
@@ -78,6 +78,12 @@ $(LINUX_CONFIG): $(BASELINE_LINUX_CONFIG) $(LINUX_MAKEFILE)
 	# edit the config as you wish, e.g., to disable KASLR:
 	# ./scripts/config --file $@ --disable RANDOMIZE_BASE
 	./scripts/config --file $@ --set-str LOCALVERSION "-$(CUSTOM_KERNEL_NAME)"
+	# avoid the kernel module signing facility. Learn more at:
+	# https://unix.stackexchange.com/questions/293642/attempting-to-compile-kernel-yields-a-certification-error
+	# https://www.kernel.org/doc/html/v5.4/admin-guide/module-signing.html
+	./scripts/config --file $@ --undefine MODULE_SIG_ALL
+	./scripts/config --file $@ --undefine MODULE_SIG_KEY
+	./scripts/config --file $@ --undefine SYSTEM_TRUSTED_KEYS
 	yes '' | make O=$(LINUX_BUILD_DIR) oldconfig # sanitize the .config file
 
 $(CUSTOM_VAGRANTFILE): $(PROC_CMDLINE)
