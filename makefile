@@ -14,8 +14,10 @@ export VAGRANT_HOME := $(ROOT_DIR)/.vagrant.d
 LINUX_SOURCE_DIR := $(ROOT_DIR)/linux
 LINUX_BUILD_DIR := $(ROOT_DIR)/build
 CUSTOM_KERNEL_NAME := custom
-# more about this version: https://github.com/torvalds/linux/releases/tag/v5.10
+# choose a specific linux kernel version with "cd linux && git checkout tags/v5.10"
 KERNEL_VERSION := 5.10.0
+# we can also extract the kernel version from the linux source tree via "cd linux && make kernelversion"
+# but this is problematic because $(LINUX_SOURCE_DIR) is empty right after "git clone"
 
 ##### Scripts and commands #####
 APT_INSTALL := sudo apt install -y
@@ -58,7 +60,7 @@ $(INSTALLED_PERF_TOOL): $(PERF_TOOL)
 
 $(PERF_TOOL): $(LINUX_CONFIG)
 	mkdir -p $(dir $@)
-	make -C $(LINUX_SOURCE_DIR)/tools/perf O=$(LINUX_BUILD_DIR)/tools/perf
+	make -C $(LINUX_SOURCE_DIR)/tools/perf O=$(LINUX_BUILD_DIR)/tools/perf JOBS=8
 
 $(VMLINUZ): $(LINUX_CONFIG)
 	cd $(LINUX_SOURCE_DIR)
