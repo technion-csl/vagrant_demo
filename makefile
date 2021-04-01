@@ -78,12 +78,12 @@ $(LINUX_CONFIG): $(BASELINE_LINUX_CONFIG) $(LINUX_MAKEFILE)
 	# edit the config as you wish, e.g., to disable KASLR:
 	# ./scripts/config --file $@ --disable RANDOMIZE_BASE
 	./scripts/config --file $@ --set-str LOCALVERSION "-$(CUSTOM_KERNEL_NAME)"
-	# avoid the kernel module signing facility. Learn more at:
-	# https://unix.stackexchange.com/questions/293642/attempting-to-compile-kernel-yields-a-certification-error
+	# disable the kernel module signing facility. Learn more at:
 	# https://www.kernel.org/doc/html/v5.4/admin-guide/module-signing.html
-	./scripts/config --file $@ --undefine MODULE_SIG_ALL
-	./scripts/config --file $@ --undefine MODULE_SIG_KEY
-	./scripts/config --file $@ --undefine SYSTEM_TRUSTED_KEYS
+	# https://lists.debian.org/debian-kernel/2016/04/msg00579.html
+	./scripts/config --file $@ --set-val SYSTEM_TRUSTED_KEYS ""
+	./scripts/config --file $@ --set-val MODULE_SIG_KEY ""
+	./scripts/config --file $@ --disable MODULE_SIG_ALL
 	yes '' | make O=$(LINUX_BUILD_DIR) oldconfig # sanitize the .config file
 
 $(CUSTOM_VAGRANTFILE): $(PROC_CMDLINE)
