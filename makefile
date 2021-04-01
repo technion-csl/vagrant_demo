@@ -1,6 +1,9 @@
 export ROOT_DIR := $(PWD)
 SHELL := /bin/bash
+# run all lines of a recipe in a single invocation of the shell rather than each line being invoked separately
 .ONESHELL:
+# invoke recipes as if the shell had been passed the -e flag: the first failing command in a recipe will cause the recipe to fail immediately
+.POSIX:
 
 ##### Global constants #####
 BASELINE_VAGRANT_NAME := baseline_vagrant
