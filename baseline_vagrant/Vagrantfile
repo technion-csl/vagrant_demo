@@ -81,7 +81,7 @@ Vagrant.configure("2") do |config|
   # documentation for more information about their specific syntax and use.
   config.vm.provision "shell", inline: <<-SHELL
     export DEBIAN_FRONTEND=noninteractive
-    apt install -y git make
+    apt install -y git make gcc
   SHELL
 end
 

@@ -18,7 +18,7 @@ LINUX_SOURCE_DIR := $(ROOT_DIR)/linux
 LINUX_BUILD_DIR := $(ROOT_DIR)/build
 CUSTOM_KERNEL_NAME := custom
 # choose a specific linux kernel version with "cd linux && git checkout tags/v5.4"
-KERNEL_VERSION := 5.4.0
+KERNEL_VERSION := 5.4.109
 # we can also extract the kernel version from the linux source tree via "cd linux && make kernelversion"
 # but this is problematic because $(LINUX_SOURCE_DIR) is empty right after "git clone"
 
@@ -51,7 +51,7 @@ all: $(FLAG)
 $(FLAG): $(CUSTOM_VAGRANTFILE) $(VMLINUZ) $(INSTALLED_PERF_TOOL)
 	cd $(CUSTOM_VAGRANT_DIR)
 	$(VAGRANT) up --provider=libvirt
-	$(VAGRANT) ssh -c "cd make -C $(LINUX_SOURCE_DIR)/tools/perf O=$(LINUX_BUILD_DIR)/tools/perf prefix=/usr/ install"
+	$(VAGRANT) ssh -c "make -C $(LINUX_SOURCE_DIR)/tools/perf O=$(LINUX_BUILD_DIR)/tools/perf prefix=/usr/ install"
 	$(VAGRANT) ssh -c "uname -a && perf --version" > $@
 	$(VAGRANT) halt
 
