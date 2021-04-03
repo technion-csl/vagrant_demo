@@ -167,14 +167,14 @@ clean-baseline:
 	$(VAGRANT) halt
 	$(VAGRANT) destroy --force
 	# delete the VM manually through virsh in case vagrant destroy doesn't work
-	virsh undefine $(BASELINE_VAGRANT_NAME)
+	virsh undefine $(USER)-$(BASELINE_VAGRANT_NAME)
 
 clean-custom:
 	cd $(CUSTOM_VAGRANT_DIR)
 	$(VAGRANT) halt
 	$(VAGRANT) destroy --force
 	# delete the VM manually through virsh in case vagrant destroy doesn't work
-	virsh undefine $(CUSTOM_VAGRANT_NAME)
+	virsh undefine $(USER)-$(CUSTOM_VAGRANT_NAME)
 
 clean: clean-baseline clean-custom
 	rm -f $(PROC_CMDLINE) $(BASELINE_LINUX_CONFIG)
