@@ -16,6 +16,7 @@ CUSTOM_VAGRANT_DIR := $(ROOT_DIR)/$(CUSTOM_VAGRANT_NAME)
 export VAGRANT_HOME := $(ROOT_DIR)/.vagrant.d
 LINUX_SOURCE_DIR := $(ROOT_DIR)/linux
 LINUX_BUILD_DIR := $(ROOT_DIR)/build
+LINUX_INSTALL_DIR := $(ROOT_DIR)/install
 CUSTOM_KERNEL_NAME := custom
 # choose a specific linux kernel version with "cd linux && git checkout tags/v5.4"
 KERNEL_VERSION := 5.4.109
@@ -28,18 +29,20 @@ APT_REMOVE := sudo apt purge -y
 VAGRANT := vagrant
 # more about the plugin: https://github.com/vagrant-libvirt/vagrant-libvirt
 VAGRANT_PLUGIN := vagrant-libvirt
+MAKE_LINUX := make -C $(LINUX_SOURCE_DIR) --jobs=$$(nproc) O=$(LINUX_BUILD_DIR)
 
 ##### Targets (== files) #####
-FLAG := $(ROOT_DIR)/flag
-CUSTOM_VAGRANTFILE := $(CUSTOM_VAGRANT_DIR)/Vagrantfile
 PROC_CMDLINE := $(BASELINE_VAGRANT_DIR)/proc_cmdline.txt
 BASELINE_LINUX_CONFIG := $(BASELINE_VAGRANT_DIR)/config_from_vagrant
+CUSTOM_VAGRANTFILE := $(CUSTOM_VAGRANT_DIR)/Vagrantfile
 LINUX_MAKEFILE := $(LINUX_SOURCE_DIR)/Makefile
 LINUX_CONFIG := $(LINUX_BUILD_DIR)/.config
-VMLINUZ := /boot/vmlinuz-$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)
-INITRD := /boot/initrd.img-$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)
+BZIMAGE := $(LINUX_BUILD_DIR)/arch/x86/boot/bzImage
+VMLINUZ := $(LINUX_INSTALL_DIR)/vmlinuz-$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)
+INITRD := $(LINUX_INSTALL_DIR)/initrd.img-$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)
 PERF_TOOL := $(LINUX_BUILD_DIR)/tools/perf/perf
 INSTALLED_PERF_TOOL := /usr/lib/linux-tools/$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)/perf
+FLAG := $(ROOT_DIR)/flag
 
 ##### Recipes #####
 
@@ -48,29 +51,34 @@ INSTALLED_PERF_TOOL := /usr/lib/linux-tools/$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NA
 
 all: $(FLAG)
 
-$(FLAG): $(CUSTOM_VAGRANTFILE) $(VMLINUZ) $(INSTALLED_PERF_TOOL)
+$(FLAG): $(CUSTOM_VAGRANTFILE) $(VMLINUZ) $(INITRD) $(PERF_TOOL)
 	cd $(CUSTOM_VAGRANT_DIR)
 	$(VAGRANT) up --provider=libvirt
-	$(VAGRANT) ssh -c "make -C $(LINUX_SOURCE_DIR)/tools/perf O=$(LINUX_BUILD_DIR)/tools/perf prefix=/usr/ install"
+	$(VAGRANT) ssh -c "sudo mkdir -p $(dir $(INSTALLED_PERF_TOOL)) && sudo cp -f $(PERF_TOOL) $(INSTALLED_PERF_TOOL)" > $@
 	$(VAGRANT) ssh -c "uname -a && perf --version" > $@
 	$(VAGRANT) halt
 
 $(INSTALLED_PERF_TOOL): $(PERF_TOOL)
-	sudo make -C $(LINUX_SOURCE_DIR)/tools/perf O=$(LINUX_BUILD_DIR)/tools/perf prefix=/usr install
+	sudo mkdir -p $(dir $@)
+	sudo cp -f $< $@
 	# In principle, every linux version requires its own perf, so we have to build it from source.
 	# In practice, an older version of perf will usually work, so it's enough to:
 	# sudo ln -s /usr/lib/linux-tools/$(uname -r) /usr/lib/linux-tools/$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)
 
-$(PERF_TOOL): $(LINUX_CONFIG)
-	mkdir -p $(dir $@)
-	make -C $(LINUX_SOURCE_DIR)/tools/perf O=$(LINUX_BUILD_DIR)/tools/perf JOBS=8
+$(INITRD): $(VMLINUZ)
+	# INSTALL_MOD_STRIP strip the modules and reduces the initrd size by ~10x
+	$(MAKE_LINUX) INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH=$(LINUX_INSTALL_DIR) modules_install
+	update-initramfs -c -k $(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME) -b $(LINUX_INSTALL_DIR)
 
-$(VMLINUZ): $(LINUX_CONFIG)
-	cd $(LINUX_SOURCE_DIR)
-	make --jobs=8 O=$(LINUX_BUILD_DIR)
-	# INSTALL_MOD_STRIP strips the modules and reduces the initrd size by ~10x
-	sudo make O=$(LINUX_BUILD_DIR) INSTALL_MOD_STRIP=1 modules_install
-	sudo make O=$(LINUX_BUILD_DIR) install
+$(VMLINUZ): $(BZIMAGE)
+	mkdir -p $(LINUX_INSTALL_DIR)
+	$(MAKE_LINUX) INSTALL_PATH=$(LINUX_INSTALL_DIR) install
+
+$(PERF_TOOL): $(LINUX_CONFIG)
+	$(MAKE_LINUX) tools/perf
+
+$(BZIMAGE): $(LINUX_CONFIG)
+	$(MAKE_LINUX)
 
 $(LINUX_CONFIG): $(BASELINE_LINUX_CONFIG) $(LINUX_MAKEFILE)
 	mkdir -p $(LINUX_BUILD_DIR)
@@ -122,13 +130,13 @@ ssh-baseline-vagrant: | prerequisites
 	# Fresh Vagrantfiles can be created through: vagrant init generic/ubuntu2004
 	# where generic/ubuntu2004 is the box name (all boxes are at: https://app.vagrantup.com/boxes/search)
 	cd $(BASELINE_VAGRANT_DIR)
-	$(VAGRANT) up --provider=libvirt --debug
+	$(VAGRANT) up --provider=libvirt #--debug
 	$(VAGRANT) ssh
 	$(VAGRANT) halt
 
 ssh-custom-vagrant: $(CUSTOM_VAGRANTFILE) $(VMLINUZ)
 	cd $(CUSTOM_VAGRANT_DIR)
-	$(VAGRANT) up --provider=libvirt --debug
+	$(VAGRANT) up --provider=libvirt #--debug
 	$(VAGRANT) ssh
 	$(VAGRANT) halt
 
@@ -180,10 +188,7 @@ clean: clean-baseline clean-custom
 	rm -f $(PROC_CMDLINE) $(BASELINE_LINUX_CONFIG)
 	rm -rf $(CUSTOM_VAGRANT_DIR)
 	rm -rf $(LINUX_BUILD_DIR)
+	rm -rf $(LINUX_INSTALL_DIR)
 	cd $(LINUX_SOURCE_DIR) && make mrproper
-
-dist-clean: clean
-	vagrant box prune --force # remove old versions of installed boxes
-	sudo ./uninstallKernel.sh $(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)
-	sudo rm -f $(INSTALLED_PERF_TOOL)
+	$(VAGRANT) box prune --force # remove old versions of installed boxes
 
