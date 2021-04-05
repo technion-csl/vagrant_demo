@@ -1,4 +1,3 @@
-export ROOT_DIR := $(PWD)
 SHELL := /bin/bash
 # run all lines of a recipe in a single invocation of the shell rather than each line being invoked separately
 .ONESHELL:
@@ -6,6 +5,9 @@ SHELL := /bin/bash
 .POSIX:
 
 ##### Global constants #####
+export ROOT_DIR := $(PWD)
+# don't modify this variable because we rely on identical paths in the guest and host
+export SHARED_VAGRANT_DIR := $(ROOT_DIR)
 BASELINE_VAGRANT_NAME := baseline_vagrant
 BASELINE_VAGRANT_DIR := $(ROOT_DIR)/$(BASELINE_VAGRANT_NAME)
 BASELINE_VAGRANTFILE := $(BASELINE_VAGRANT_DIR)/Vagrantfile
@@ -19,7 +21,9 @@ LINUX_BUILD_DIR := $(ROOT_DIR)/build
 LINUX_INSTALL_DIR := $(ROOT_DIR)/install
 CUSTOM_KERNEL_NAME := custom
 # choose a specific linux kernel version with "cd linux && git checkout tags/v5.4"
-KERNEL_VERSION := 5.4.109
+BASELINE_KERNEL_VERSION := 5.4
+LAST_STABLE_VERSION := 109
+KERNEL_VERSION := $(BASELINE_KERNEL_VERSION).$(LAST_STABLE_VERSION)
 # we can also extract the kernel version from the linux source tree via "cd linux && make kernelversion"
 # but this is problematic because $(LINUX_SOURCE_DIR) is empty right after "git clone"
 
@@ -47,7 +51,7 @@ FLAG := $(ROOT_DIR)/flag
 ##### Recipes #####
 
 .PHONY: all ssh-baseline-vagrant ssh-custom-vagrant prerequisites \
-	clean clean-baseline clean-custom dist-clean
+	clean clean-baseline-vagrant clean-custom-vagrant
 
 all: $(FLAG)
 
@@ -65,10 +69,10 @@ $(INSTALLED_PERF_TOOL): $(PERF_TOOL)
 	# In practice, an older version of perf will usually work, so it's enough to:
 	# sudo ln -s /usr/lib/linux-tools/$(uname -r) /usr/lib/linux-tools/$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)
 
-$(INITRD): $(VMLINUZ)
-	# INSTALL_MOD_STRIP strip the modules and reduces the initrd size by ~10x
-	$(MAKE_LINUX) INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH=$(LINUX_INSTALL_DIR) modules_install
-	update-initramfs -c -k $(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME) -b $(LINUX_INSTALL_DIR)
+#$(INITRD): $(VMLINUZ)
+#	# INSTALL_MOD_STRIP strip the modules and reduces the initrd size by ~10x
+#	$(MAKE_LINUX) INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH=$(LINUX_INSTALL_DIR) modules_install
+#	update-initramfs -c -k $(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME) -b $(LINUX_INSTALL_DIR)
 
 $(VMLINUZ): $(BZIMAGE)
 	mkdir -p $(LINUX_INSTALL_DIR)
@@ -86,8 +90,7 @@ $(LINUX_CONFIG): $(BASELINE_LINUX_CONFIG) $(LINUX_MAKEFILE)
 	cp -f $< $@
 	# change dir before calling the config script (it works only from the source dir)
 	cd $(LINUX_SOURCE_DIR)
-	# edit the config as you wish, e.g., to disable KASLR:
-	# ./scripts/config --file $@ --disable RANDOMIZE_BASE
+	# edit the config as you wish, e.g., set the kernel name:
 	./scripts/config --file $@ --set-str LOCALVERSION "-$(CUSTOM_KERNEL_NAME)"
 	# disable the kernel module signing facility. Learn more at:
 	# https://www.kernel.org/doc/html/v5.4/admin-guide/module-signing.html
@@ -108,6 +111,13 @@ $(CUSTOM_VAGRANTFILE): $(PROC_CMDLINE)
 	sed -i "s,#libvirt.initrd =,libvirt.initrd = \"$(INITRD)\",g" $@
 	sed -i "s,#libvirt.cmd_line =,libvirt.cmd_line =,g" $@
 	sed -i "s,ROOT_DEVICE,$$root_device,g" $@
+
+$(INITRD): $(BASELINE_LINUX_CONFIG)
+	cd $(BASELINE_VAGRANT_DIR)
+	$(VAGRANT) up --provider=libvirt
+	# use bash single quotes to avoid the $(uname -r) expansion in the host
+	$(VAGRANT) ssh -c 'cp /boot/initrd.img-$$(uname -r) $@'
+	$(VAGRANT) halt
 
 # prevent this target from running concurrently with $(PROC_CMDLINE) by depending on it
 $(BASELINE_LINUX_CONFIG): $(PROC_CMDLINE)
@@ -168,23 +178,23 @@ prerequisites:
 	fi
 
 # ignore errors when executing these two recipes (the VMs may not exist so deleting them may fail)
-.IGNORE: clean-baseline clean-custom
+.IGNORE: clean-baseline-vagrant clean-custom-vagrant
 
-clean-baseline:
+clean-baseline-vagrant:
 	cd $(BASELINE_VAGRANT_DIR)
 	$(VAGRANT) halt
 	$(VAGRANT) destroy --force
 	# delete the VM manually through virsh in case vagrant destroy doesn't work
 	virsh undefine $(USER)-$(BASELINE_VAGRANT_NAME)
 
-clean-custom:
+clean-custom-vagrant:
 	cd $(CUSTOM_VAGRANT_DIR)
 	$(VAGRANT) halt
 	$(VAGRANT) destroy --force
 	# delete the VM manually through virsh in case vagrant destroy doesn't work
 	virsh undefine $(USER)-$(CUSTOM_VAGRANT_NAME)
 
-clean: clean-baseline clean-custom
+clean: clean-baseline-vagrant clean-custom-vagrant
 	rm -f $(PROC_CMDLINE) $(BASELINE_LINUX_CONFIG)
 	rm -rf $(CUSTOM_VAGRANT_DIR)
 	rm -rf $(LINUX_BUILD_DIR)
