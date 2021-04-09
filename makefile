@@ -41,6 +41,7 @@ BASELINE_LINUX_CONFIG := $(BASELINE_VAGRANT_DIR)/config_from_vagrant
 CUSTOM_VAGRANTFILE := $(CUSTOM_VAGRANT_DIR)/Vagrantfile
 LINUX_MAKEFILE := $(LINUX_SOURCE_DIR)/Makefile
 LINUX_CONFIG := $(LINUX_BUILD_DIR)/.config
+LINUX_DEB_PACKAGE := $(LINUX_BUILD_DIR)/../linux-image-$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)_$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)-1_amd64.deb
 BZIMAGE := $(LINUX_BUILD_DIR)/arch/x86/boot/bzImage
 VMLINUZ := $(LINUX_INSTALL_DIR)/vmlinuz-$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)
 INITRD := $(LINUX_INSTALL_DIR)/initrd.img-$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)
@@ -69,14 +70,22 @@ $(INSTALLED_PERF_TOOL): $(PERF_TOOL)
 	# In practice, an older version of perf will usually work, so it's enough to:
 	# sudo ln -s /usr/lib/linux-tools/$(uname -r) /usr/lib/linux-tools/$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)
 
-#$(INITRD): $(VMLINUZ)
-#	# INSTALL_MOD_STRIP strip the modules and reduces the initrd size by ~10x
-#	$(MAKE_LINUX) INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH=$(LINUX_INSTALL_DIR) modules_install
-#	update-initramfs -c -k $(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME) -b $(LINUX_INSTALL_DIR)
+$(INITRD): $(VMLINUZ)
+	cd $(BASELINE_VAGRANT_DIR)
+	$(VAGRANT) up --provider=libvirt
+	$(VAGRANT) ssh -c "cp /boot/$(notdir $@) $@"
+	$(VAGRANT) halt
 
-$(VMLINUZ): $(BZIMAGE)
-	mkdir -p $(LINUX_INSTALL_DIR)
-	$(MAKE_LINUX) INSTALL_PATH=$(LINUX_INSTALL_DIR) install
+$(VMLINUZ): $(LINUX_DEB_PACKAGE) | $(LINUX_INSTALL_DIR)
+	cd $(BASELINE_VAGRANT_DIR)
+	$(VAGRANT) up --provider=libvirt
+	$(VAGRANT) ssh -c "sudo dpkg --install $<"
+	$(VAGRANT) ssh -c "cp /boot/$(notdir $@) $@"
+	$(VAGRANT) halt
+
+$(LINUX_DEB_PACKAGE): $(BZIMAGE)
+	$(APT_INSTALL) build-essential
+	$(MAKE_LINUX) bindeb-pkg
 
 $(PERF_TOOL): $(LINUX_CONFIG)
 	$(MAKE_LINUX) tools/perf
@@ -84,8 +93,7 @@ $(PERF_TOOL): $(LINUX_CONFIG)
 $(BZIMAGE): $(LINUX_CONFIG)
 	$(MAKE_LINUX)
 
-$(LINUX_CONFIG): $(BASELINE_LINUX_CONFIG) $(LINUX_MAKEFILE)
-	mkdir -p $(LINUX_BUILD_DIR)
+$(LINUX_CONFIG): $(BASELINE_LINUX_CONFIG) $(LINUX_MAKEFILE) | $(LINUX_BUILD_DIR)
 	# take the config of the vagrant distribution as the baseline
 	cp -f $< $@
 	# change dir before calling the config script (it works only from the source dir)
@@ -112,13 +120,6 @@ $(CUSTOM_VAGRANTFILE): $(PROC_CMDLINE)
 	sed -i "s,#libvirt.cmd_line =,libvirt.cmd_line =,g" $@
 	sed -i "s,ROOT_DEVICE,$$root_device,g" $@
 
-$(INITRD): $(BASELINE_LINUX_CONFIG)
-	cd $(BASELINE_VAGRANT_DIR)
-	$(VAGRANT) up --provider=libvirt
-	# use bash single quotes to avoid the $(uname -r) expansion in the host
-	$(VAGRANT) ssh -c 'cp /boot/initrd.img-$$(uname -r) $@'
-	$(VAGRANT) halt
-
 # prevent this target from running concurrently with $(PROC_CMDLINE) by depending on it
 $(BASELINE_LINUX_CONFIG): $(PROC_CMDLINE)
 	cd $(BASELINE_VAGRANT_DIR)
@@ -134,6 +135,9 @@ $(PROC_CMDLINE): | prerequisites
 	$(VAGRANT) ssh -c "cat /proc/cmdline" > $@
 	$(VAGRANT) halt
 	dos2unix $@
+
+$(LINUX_BUILD_DIR) $(LINUX_INSTALL_DIR):
+	mkdir -p $@
 
 ssh-baseline-vagrant: | prerequisites
 	# The Vagrantfile defines the configuration of the VM that resides in the current directory.
@@ -202,9 +206,10 @@ clean-custom-vagrant:
 
 clean: clean-baseline-vagrant clean-custom-vagrant
 	rm -f $(PROC_CMDLINE) $(BASELINE_LINUX_CONFIG)
-	rm -rf $(CUSTOM_VAGRANT_DIR)
+	cd $(LINUX_SOURCE_DIR) && make mrproper
 	rm -rf $(LINUX_BUILD_DIR)
 	rm -rf $(LINUX_INSTALL_DIR)
-	cd $(LINUX_SOURCE_DIR) && make mrproper
+	rm -rf *1_amd64.deb *1_amd64.buildinfo *1_amd64.changes # the files created by "make bindeb-pkg"
+	rm -rf $(CUSTOM_VAGRANT_DIR)
 	$(VAGRANT) box prune --force # remove old versions of installed boxes
 
