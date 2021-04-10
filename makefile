@@ -108,8 +108,7 @@ $(LINUX_CONFIG): $(BASELINE_LINUX_CONFIG) $(LINUX_MAKEFILE) | $(LINUX_BUILD_DIR)
 	./scripts/config --file $@ --disable MODULE_SIG_ALL
 	yes '' | make O=$(LINUX_BUILD_DIR) oldconfig # sanitize the .config file
 
-$(CUSTOM_VAGRANTFILE): $(PROC_CMDLINE)
-	mkdir -p $(CUSTOM_VAGRANT_DIR)
+$(CUSTOM_VAGRANTFILE): $(PROC_CMDLINE) | $(CUSTOM_VAGRANT_DIR)
 	cp -rf $(BASELINE_VAGRANTFILE) $@
 	proc_cmdline=$$(cat $(PROC_CMDLINE))
 	[[ "$$proc_cmdline" =~ (.*)root=(.*) ]]
@@ -136,7 +135,8 @@ $(PROC_CMDLINE): | prerequisites
 	$(VAGRANT) halt
 	dos2unix $@
 
-$(LINUX_BUILD_DIR) $(LINUX_INSTALL_DIR):
+# create the required directories when we need them (same recipe for multiple targets)
+$(LINUX_BUILD_DIR) $(LINUX_INSTALL_DIR) $(CUSTOM_VAGRANT_DIR):
 	mkdir -p $@
 
 ssh-baseline-vagrant: | prerequisites
@@ -195,14 +195,14 @@ clean-baseline-vagrant:
 	$(VAGRANT) halt
 	$(VAGRANT) destroy --force
 	# delete the VM manually through virsh in case vagrant destroy doesn't work
-	virsh undefine $(USER)-$(BASELINE_VAGRANT_NAME)
+	virsh undefine $(USER)_$(BASELINE_VAGRANT_NAME)
 
 clean-custom-vagrant:
 	cd $(CUSTOM_VAGRANT_DIR)
 	$(VAGRANT) halt
 	$(VAGRANT) destroy --force
 	# delete the VM manually through virsh in case vagrant destroy doesn't work
-	virsh undefine $(USER)-$(CUSTOM_VAGRANT_NAME)
+	virsh undefine $(USER)_$(CUSTOM_VAGRANT_NAME)
 
 clean: clean-baseline-vagrant clean-custom-vagrant
 	rm -f $(PROC_CMDLINE) $(BASELINE_LINUX_CONFIG)
