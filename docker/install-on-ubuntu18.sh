@@ -19,5 +19,11 @@ else
     echo "Please logout and login to belong to the new groups"
     exit -1 # stop the script
 fi
+# test that the installation succeeded
 docker run hello-world
+# remove the hello-world container
+docker container prune -y
+# automatically start docker on boot
+sudo systemctl enable containerd.service
+sudo systemctl enable docker.service
 
