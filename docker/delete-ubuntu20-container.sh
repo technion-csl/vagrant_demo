@@ -1,4 +1,6 @@
 #! /bin/bash
 
-docker rm --force ubuntu20
+source global_variables.sh
+docker rm --force $container_name
+docker image rm --force $image_name
 

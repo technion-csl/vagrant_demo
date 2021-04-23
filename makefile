@@ -159,24 +159,7 @@ $(LINUX_MAKEFILE):
 
 prerequisites:
 	$(APT_INSTALL) qemu-kvm libvirt-clients libvirt-dev libvirt-daemon-system
-	sudo modprobe kvm kvm_intel
-	kvm-ok
-	if [[ "$$(virt-host-validate qemu)" == *"FAIL"* ]]; then
-		echo "There is a problem in the host virtualization setup"
-		exit -1 # stop the script
-	fi
-	for group in kvm libvirtd; do
-		if [[ "$$(groups)" == *"$$group"* ]]; then
-			echo "The user $(USER) belongs to the $$group group"
-		else
-			echo "The user $(USER) does not belong to the $$group group"
-			echo "Adding it via:"
-			sudo groupadd --force $$group
-			sudo adduser $(USER) $$group
-			echo "Please logout and login to belong to the new groups"
-			exit -1 # stop the script
-		fi
-	done
+	./setupLibvirt.sh
 	# install the dependencies recommended in https://github.com/vagrant-libvirt/vagrant-libvirt#readme
 	$(APT_INSTALL) vagrant ruby-libvirt libxslt-dev libxml2-dev libvirt-dev zlib1g-dev ruby-dev
 	if [[ $$($(VAGRANT) plugin list) == *"$(VAGRANT_PLUGIN)"* ]] ; then
