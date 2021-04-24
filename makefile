@@ -26,6 +26,8 @@ LAST_STABLE_VERSION := 109
 KERNEL_VERSION := $(BASELINE_KERNEL_VERSION).$(LAST_STABLE_VERSION)
 # we can also extract the kernel version from the linux source tree via "cd linux && make kernelversion"
 # but this is problematic because $(LINUX_SOURCE_DIR) is empty right after "git clone"
+QEMU_SOURCE_DIR := $(ROOT_DIR)/qemu
+QEMU_BUILD_DIR := $(ROOT_DIR)/qemu-build
 
 ##### Scripts and commands #####
 APT_INSTALL := sudo apt install -y
@@ -47,6 +49,9 @@ VMLINUZ := $(LINUX_INSTALL_DIR)/vmlinuz-$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)
 INITRD := $(LINUX_INSTALL_DIR)/initrd.img-$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)
 PERF_TOOL := $(LINUX_BUILD_DIR)/tools/perf/perf
 INSTALLED_PERF_TOOL := /usr/lib/linux-tools/$(KERNEL_VERSION)-$(CUSTOM_KERNEL_NAME)/perf
+QEMU_CONFIGURE := $(QEMU_SOURCE_DIR)/configure
+QEMU_MAKEFILE := $(QEMU_BUILD_DIR)/Makefile
+QEMU_EXECUTABLE := $(QEMU_BUILD_DIR)/x86_64-softmmu/qemu-system-x86_64
 FLAG := $(ROOT_DIR)/flag
 
 ##### Recipes #####
@@ -136,7 +141,7 @@ $(PROC_CMDLINE): | prerequisites
 	dos2unix $@
 
 # create the required directories when we need them (same recipe for multiple targets)
-$(LINUX_BUILD_DIR) $(LINUX_INSTALL_DIR) $(CUSTOM_VAGRANT_DIR):
+$(LINUX_BUILD_DIR) $(LINUX_INSTALL_DIR) $(CUSTOM_VAGRANT_DIR) $(QEMU_BUILD_DIR):
 	mkdir -p $@
 
 ssh-baseline-vagrant: | prerequisites
@@ -155,7 +160,20 @@ ssh-custom-vagrant: $(CUSTOM_VAGRANTFILE) $(VMLINUZ)
 	$(VAGRANT) halt
 
 $(LINUX_MAKEFILE):
-	git submodule update --init --progress
+	git submodule update --init --progress linux
+
+$(QEMU_EXECUTABLE): $(QEMU_MAKEFILE)
+	cd $(QEMU_BUILD_DIR)
+	make --jobs=$$(nproc)
+
+$(QEMU_MAKEFILE): $(QEMU_CONFIGURE) | $(QEMU_BUILD_DIR)
+	$(APT_INSTALL) ninja-build libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev
+	cd $(QEMU_BUILD_DIR)
+	$< --cpu=x86_64 --target-list=x86_64-softmmu
+	touch $@
+
+$(QEMU_CONFIGURE):
+	git submodule update --init --progress qemu
 
 prerequisites:
 	./setupLibvirt.sh
@@ -194,4 +212,5 @@ clean: clean-baseline-vagrant clean-custom-vagrant
 	rm -rf *1_amd64.deb *1_amd64.buildinfo *1_amd64.changes # the files created by "make bindeb-pkg"
 	rm -rf $(CUSTOM_VAGRANT_DIR)
 	$(VAGRANT) box prune --force # remove old versions of installed boxes
+	rm -rf $(QEMU_BUILD_DIR)
 
