@@ -5,7 +5,8 @@ set -e
 
 source global_variables.sh
 run_flags="--interactive --tty --privileged"
-mount_flags="--mount type=bind,source=/lib/modules,destination=/lib/modules,readonly"
+mount_flags="--mount type=bind,source=/lib/modules,destination=/lib/modules,readonly \
+    --mount type=bind,source=/sys/fs/cgroup,destination=/sys/fs/cgroup,readonly"
 if [[ "$(docker images -q $image_name 2> /dev/null)" == "" ]]; then
     docker build --tag $image_name - < Dockerfile
 fi

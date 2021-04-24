@@ -1,5 +1,5 @@
 #! /bin/bash
 
-image_name=idanyani/ubuntu20
-container_name=ubuntu20
+image_name=idanyani/ubuntu20-image
+container_name=ubuntu20-container
 

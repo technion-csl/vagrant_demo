@@ -158,10 +158,9 @@ $(LINUX_MAKEFILE):
 	git submodule update --init --progress
 
 prerequisites:
-	$(APT_INSTALL) qemu-kvm libvirt-clients libvirt-dev libvirt-daemon-system
 	./setupLibvirt.sh
 	# install the dependencies recommended in https://github.com/vagrant-libvirt/vagrant-libvirt#readme
-	$(APT_INSTALL) vagrant ruby-libvirt libxslt-dev libxml2-dev libvirt-dev zlib1g-dev ruby-dev
+	$(APT_INSTALL) vagrant ebtables dnsmasq-base ruby-libvirt libxslt-dev libxml2-dev zlib1g-dev ruby-dev
 	if [[ $$($(VAGRANT) plugin list) == *"$(VAGRANT_PLUGIN)"* ]] ; then
 		echo "$(VAGRANT_PLUGIN) is installed"
 		else
