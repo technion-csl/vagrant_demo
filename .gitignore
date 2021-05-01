@@ -4,5 +4,10 @@ baseline_vagrant/config_from_vagrant
 baseline_vagrant/proc_cmdline.txt
 custom_vagrant/
 build/
+qemu-build/
+install/
 flag
+*.buildinfo
+*.changes
+*.deb
 
