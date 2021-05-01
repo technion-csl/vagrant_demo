@@ -56,14 +56,16 @@ FLAG := $(ROOT_DIR)/flag
 
 ##### Recipes #####
 
-.PHONY: all ssh-baseline-vagrant ssh-custom-vagrant prerequisites \
-	clean clean-baseline-vagrant clean-custom-vagrant
+.PHONY: all ssh-baseline-vagrant ssh-custom-vagrant \
+	clean clean-baseline-vagrant clean-custom-vagrant \
+	software/kernel software/vagrant
 
 all: $(FLAG)
 
 $(FLAG): $(CUSTOM_VAGRANTFILE) $(VMLINUZ) $(INITRD) $(PERF_TOOL) $(QEMU_EXECUTABLE)
 	cd $(CUSTOM_VAGRANT_DIR)
 	$(VAGRANT) up --provider=libvirt
+	$(VAGRANT) ssh -c "cd $(SHARED_VAGRANT_DIR) && make software/kernel" > $@
 	$(VAGRANT) ssh -c "sudo mkdir -p $(dir $(INSTALLED_PERF_TOOL)) && sudo cp -f $(PERF_TOOL) $(INSTALLED_PERF_TOOL)" > $@
 	$(VAGRANT) ssh -c "uname -a && perf --version" > $@
 	$(VAGRANT) halt
@@ -95,7 +97,7 @@ $(LINUX_DEB_PACKAGE): $(BZIMAGE)
 $(PERF_TOOL): $(LINUX_CONFIG)
 	$(MAKE_LINUX) tools/perf
 
-$(BZIMAGE): $(LINUX_CONFIG)
+$(BZIMAGE): $(LINUX_CONFIG) | software/kernel
 	$(MAKE_LINUX)
 
 $(LINUX_CONFIG): $(BASELINE_LINUX_CONFIG) $(LINUX_MAKEFILE) | $(LINUX_BUILD_DIR)
@@ -133,7 +135,7 @@ $(BASELINE_LINUX_CONFIG): $(PROC_CMDLINE)
 	$(VAGRANT) halt
 	dos2unix $@
 
-$(PROC_CMDLINE): | prerequisites
+$(PROC_CMDLINE): | software/vagrant
 	cd $(BASELINE_VAGRANT_DIR)
 	$(VAGRANT) up --provider=libvirt
 	$(VAGRANT) ssh -c "cat /proc/cmdline" > $@
@@ -144,7 +146,7 @@ $(PROC_CMDLINE): | prerequisites
 $(LINUX_BUILD_DIR) $(LINUX_INSTALL_DIR) $(CUSTOM_VAGRANT_DIR) $(QEMU_BUILD_DIR):
 	mkdir -p $@
 
-ssh-baseline-vagrant: | prerequisites
+ssh-baseline-vagrant: | software/vagrant
 	# The Vagrantfile defines the configuration of the VM that resides in the current directory.
 	# Fresh Vagrantfiles can be created through: vagrant init generic/ubuntu2004
 	# where generic/ubuntu2004 is the box name (all boxes are at: https://app.vagrantup.com/boxes/search)
@@ -169,13 +171,13 @@ $(QEMU_EXECUTABLE): $(QEMU_MAKEFILE)
 $(QEMU_MAKEFILE): $(QEMU_CONFIGURE) | $(QEMU_BUILD_DIR)
 	$(APT_INSTALL) ninja-build libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev
 	cd $(QEMU_BUILD_DIR)
-	$< --cpu=x86_64 --target-list=x86_64-softmmu
+	$< --target-list=x86_64-softmmu
 	touch $@
 
 $(QEMU_CONFIGURE):
 	git submodule update --init --progress qemu
 
-prerequisites:
+software/vagrant:
 	./setupLibvirt.sh
 	# install the dependencies recommended in https://github.com/vagrant-libvirt/vagrant-libvirt#readme
 	$(APT_INSTALL) vagrant ebtables dnsmasq-base ruby-libvirt libxslt-dev libxml2-dev zlib1g-dev ruby-dev
@@ -186,6 +188,10 @@ prerequisites:
 		echo "going to install it via:"
 		$(VAGRANT) plugin install $(VAGRANT_PLUGIN)
 	fi
+
+software/kernel:
+	# taken from: https://phoenixnap.com/kb/build-linux-kernel
+	$(APT_INSTALL) fakeroot build-essential ncurses-dev xz-utils libssl-dev bc flex libelf-dev bison
 
 # ignore errors when executing these two recipes (the VMs may not exist so deleting them may fail)
 .IGNORE: clean-baseline-vagrant clean-custom-vagrant
