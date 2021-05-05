@@ -35,4 +35,5 @@ if [[ "$(virt-host-validate qemu)" == *"FAIL"* ]]; then
     exit -1 # stop the script
 fi
 sudo systemctl start libvirtd
+sudo systemctl disable apparmor.service
 

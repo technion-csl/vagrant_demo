@@ -121,6 +121,7 @@ $(CUSTOM_VAGRANTFILE): $(PROC_CMDLINE) | $(CUSTOM_VAGRANT_DIR)
 	[[ "$$proc_cmdline" =~ (.*)root=(.*) ]]
 	root_device=$${BASH_REMATCH[2]}
 	sed -i "s,$(BASELINE_VAGRANT_NAME),$(CUSTOM_VAGRANT_NAME),g" $@
+	sed -i "s,#libvirt.emulator_path =,libvirt.emulator_path = \"$(QEMU_EXECUTABLE)\",g" $@
 	sed -i "s,#libvirt.kernel =,libvirt.kernel = \"$(VMLINUZ)\",g" $@
 	sed -i "s,#libvirt.initrd =,libvirt.initrd = \"$(INITRD)\",g" $@
 	sed -i "s,#libvirt.cmd_line =,libvirt.cmd_line =,g" $@

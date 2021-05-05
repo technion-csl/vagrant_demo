@@ -71,6 +71,7 @@ Vagrant.configure("2") do |config|
     # the guest VM should see the host CPU with its exact features
     libvirt.cpu_mode = "host-passthrough"
     libvirt.cpu_fallback = "forbid"
+    #libvirt.emulator_path =
     #libvirt.kernel =
     #libvirt.initrd =
     #libvirt.cmd_line = "root=ROOT_DEVICE"
