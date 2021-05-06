@@ -3,28 +3,19 @@
 # exit immediately if a command exits with a non-zero status
 set -e
 
-function add_groups {
-    user=$(whoami)
-    groups=$(groups)
-    for group in kvm libvirtd; do
-        if [[ "$groups" == *"$group"* ]]; then
-            echo "The user $user belongs to the $group group"
-        else
-            echo "The user $user does not belong to the $group group"
-            echo "Adding it via:"
-            sudo groupadd --force $group
-            sudo adduser $user $group
-            echo "Please logout and login to belong to the new groups"
-            exit -1 # stop the script
-        fi
-    done
+function editLibvirtSettings {
+    settings_file=$1
+    current_settings_file=/etc/libvirt/$settings_file
+    grep_results=$(sudo grep "CSL settings" $current_settings_file || true)
+    if [ -z "$grep_results" ]; then
+        echo moving the current $current_settings_file settings to $current_settings_file.old...
+        sudo mv $current_settings_file $current_settings_file.old
+        echo copying the custom CSL settings into $current_settings_file...
+        sudo cp ./$settings_file $current_settings_file
+    else
+        echo the current $current_settings_file setting are OK!
+    fi
 }
-
-if [[ "$(whoami)" == "root" ]]; then
-    echo "Running as the root user, which can run qemu and libvirt directly"
-else
-    add_groups
-fi
 
 sudo apt install -y cpu-checker qemu-kvm libvirt-clients libvirt-dev libvirt-daemon-system
 sudo modprobe kvm kvm_intel
@@ -35,5 +26,6 @@ if [[ "$(virt-host-validate qemu)" == *"FAIL"* ]]; then
     exit -1 # stop the script
 fi
 sudo systemctl start libvirtd
-sudo systemctl disable apparmor.service
 
+editLibvirtSettings qemu.conf
+editLibvirtSettings libvirtd.conf

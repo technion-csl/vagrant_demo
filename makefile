@@ -34,7 +34,6 @@ APT_INSTALL := sudo apt install -y
 APT_REMOVE := sudo apt purge -y
 VAGRANT := vagrant
 # more about the plugin: https://github.com/vagrant-libvirt/vagrant-libvirt
-VAGRANT_PLUGIN := vagrant-libvirt
 MAKE_LINUX := make -C $(LINUX_SOURCE_DIR) --jobs=$$(nproc) O=$(LINUX_BUILD_DIR)
 
 ##### Targets (== files) #####
@@ -180,15 +179,7 @@ $(QEMU_CONFIGURE):
 
 software/vagrant:
 	./setupLibvirt.sh
-	# install the dependencies recommended in https://github.com/vagrant-libvirt/vagrant-libvirt#readme
-	$(APT_INSTALL) vagrant ebtables dnsmasq-base ruby-libvirt libxslt-dev libxml2-dev zlib1g-dev ruby-dev
-	if [[ $$($(VAGRANT) plugin list) == *"$(VAGRANT_PLUGIN)"* ]] ; then
-		echo "$(VAGRANT_PLUGIN) is installed"
-		else
-		echo "$(VAGRANT_PLUGIN) is currently not installed"
-		echo "going to install it via:"
-		$(VAGRANT) plugin install $(VAGRANT_PLUGIN)
-	fi
+	./installVagrant.sh
 
 software/kernel:
 	# taken from: https://phoenixnap.com/kb/build-linux-kernel
