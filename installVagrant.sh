@@ -4,9 +4,10 @@
 set -e
 
 # install the dependencies recommended in https://github.com/vagrant-libvirt/vagrant-libvirt#readme
-sudo apt build-dep -y vagrant ruby-libvirt
-sudo apt install -y qemu libvirt-daemon-system libvirt-clients ebtables dnsmasq-base
-sudo apt install -y libxslt-dev libxml2-dev libvirt-dev zlib1g-dev ruby-dev
+apt_install="sudo apt install -y"
+$apt_install vagrant ruby-libvirt
+$apt_install qemu libvirt-daemon-system libvirt-clients ebtables dnsmasq-base
+$apt_install libxslt-dev libxml2-dev libvirt-dev zlib1g-dev ruby-dev
 
 # install the libvirt plugin
 # remember that this script assumes it is called from the makefile,
