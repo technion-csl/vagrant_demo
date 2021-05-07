@@ -19,8 +19,8 @@ function editLibvirtSettings {
 
 sudo apt install -y cpu-checker qemu-kvm libvirt-clients libvirt-dev libvirt-daemon-system
 sudo modprobe kvm kvm_intel
-sudo chown root:kvm /dev/kvm
-sudo chmod g+rw /dev/kvm
+sudo chmod a+rw /dev/kvm
+sudo chmod a+rw /var/run/libvirt/libvirt-sock
 if [[ "$(virt-host-validate qemu)" == *"FAIL"* ]]; then
     echo "There is a problem in the host virtualization setup"
     exit -1 # stop the script
@@ -29,3 +29,4 @@ sudo systemctl start libvirtd
 
 editLibvirtSettings qemu.conf
 editLibvirtSettings libvirtd.conf
+sudo systemctl restart libvirtd
