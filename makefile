@@ -178,7 +178,7 @@ $(QEMU_CONFIGURE):
 	git submodule update --init --progress qemu
 
 software/vagrant:
-	./setupLibvirt.sh
+	./libvirt/setupLibvirt.sh
 	./installVagrant.sh
 
 software/kernel:
