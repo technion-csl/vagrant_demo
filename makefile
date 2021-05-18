@@ -169,7 +169,12 @@ $(QEMU_EXECUTABLE): $(QEMU_MAKEFILE)
 	make --jobs=$$(nproc)
 
 $(QEMU_MAKEFILE): $(QEMU_CONFIGURE) | $(QEMU_BUILD_DIR)
-	$(APT_INSTALL) ninja-build libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev
+	# taken from: https://wiki.qemu.org/Hosts/Linux
+	$(APT_INSTALL) libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev
+	# I found out that the following packages are also required:
+	$(APT_INSTALL) ninja-build meson
+	# And assuming that you have Anaconda Python 3.8 for 64-bit Linux, this is also required:
+	conda install -c conda-forge meson
 	cd $(QEMU_BUILD_DIR)
 	$< --target-list=x86_64-softmmu
 	touch $@
