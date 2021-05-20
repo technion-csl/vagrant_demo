@@ -65,7 +65,7 @@ Vagrant.configure("2") do |config|
   # information on available options.
   config.vm.provider :libvirt do |libvirt|
     # vagrant takes the current directory as the default prefix for the guest name, so we modify it
-    libvirt.default_prefix = ENV["USER"]
+    libvirt.default_prefix = ENV["USER"] + "_"
     libvirt.cpus = 2
     libvirt.memory = 8192 # MB
     # the guest VM should see the host CPU with its exact features

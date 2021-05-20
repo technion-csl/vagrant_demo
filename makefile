@@ -189,8 +189,8 @@ software/vagrant:
 software/kernel:
 	# taken from: https://phoenixnap.com/kb/build-linux-kernel
 	$(APT_INSTALL) fakeroot build-essential ncurses-dev xz-utils libssl-dev bc flex libelf-dev bison
-	# perf requires libpython2.7
-	$(APT_INSTALL) libpython2.7
+	# perf requires other libraries ("error while loading shared libraries...")
+	$(APT_INSTALL) libpython2.7 libbabeltrace-ctf1
 
 # ignore errors when executing these two recipes (the VMs may not exist so deleting them may fail)
 .IGNORE: clean-baseline-vagrant clean-custom-vagrant
