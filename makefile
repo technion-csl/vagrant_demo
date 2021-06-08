@@ -211,7 +211,7 @@ clean-custom-vagrant:
 
 clean: clean-baseline-vagrant clean-custom-vagrant
 	rm -f $(PROC_CMDLINE) $(BASELINE_LINUX_CONFIG)
-	cd $(LINUX_SOURCE_DIR) && make mrproper
+	$(MAKE_LINUX) mrproper
 	rm -rf $(LINUX_BUILD_DIR)
 	rm -rf $(LINUX_INSTALL_DIR)
 	rm -rf *1_amd64.deb *1_amd64.buildinfo *1_amd64.changes # the files created by "make bindeb-pkg"
