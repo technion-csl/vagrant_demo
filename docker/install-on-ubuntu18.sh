@@ -22,7 +22,7 @@ fi
 # test that the installation succeeded
 docker run hello-world
 # remove the hello-world container
-docker container prune -y
+docker container prune -f
 # automatically start docker on boot
 sudo systemctl enable containerd.service
 sudo systemctl enable docker.service

@@ -57,7 +57,7 @@ FLAG := $(ROOT_DIR)/flag
 
 .PHONY: all ssh-baseline-vagrant ssh-custom-vagrant \
 	clean clean-baseline-vagrant clean-custom-vagrant \
-	software/kernel software/vagrant
+	software/vagrant software/kernel software/qemu
 
 all: $(FLAG)
 
@@ -168,13 +168,7 @@ $(QEMU_EXECUTABLE): $(QEMU_MAKEFILE)
 	cd $(QEMU_BUILD_DIR)
 	make --jobs=$$(nproc)
 
-$(QEMU_MAKEFILE): $(QEMU_CONFIGURE) | $(QEMU_BUILD_DIR)
-	# taken from: https://wiki.qemu.org/Hosts/Linux
-	$(APT_INSTALL) libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev
-	# I found out that the following packages are also required:
-	$(APT_INSTALL) ninja-build meson
-	# And assuming that you have Anaconda Python 3.8 for 64-bit Linux, this is also required:
-	conda install -c conda-forge meson
+$(QEMU_MAKEFILE): $(QEMU_CONFIGURE) | $(QEMU_BUILD_DIR) software/qemu
 	cd $(QEMU_BUILD_DIR)
 	$< --target-list=x86_64-softmmu
 	touch $@
@@ -191,6 +185,12 @@ software/kernel:
 	$(APT_INSTALL) fakeroot build-essential ncurses-dev xz-utils libssl-dev bc flex libelf-dev bison
 	# perf requires other libraries ("error while loading shared libraries...")
 	$(APT_INSTALL) libpython2.7 libbabeltrace-ctf1
+
+software/qemu: | software/kernel
+	# taken from: https://wiki.qemu.org/Hosts/Linux
+	$(APT_INSTALL) libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev
+	# I found out that the following packages are also required:
+	$(APT_INSTALL) ninja-build meson
 
 # ignore errors when executing these two recipes (the VMs may not exist so deleting them may fail)
 .IGNORE: clean-baseline-vagrant clean-custom-vagrant
