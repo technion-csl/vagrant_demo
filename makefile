@@ -67,8 +67,9 @@ all: $(FLAG)
 $(FLAG): $(CUSTOM_VAGRANTFILE) $(VMLINUZ) $(INITRD) $(PERF_TOOL) $(QEMU_EXECUTABLE)
 	cd $(CUSTOM_VAGRANT_DIR)
 	$(VAGRANT_UP)
-	$(VAGRANT) ssh -c "cd $(SHARED_VAGRANT_DIR) && make software/kernel" > $@
-	$(VAGRANT) ssh -c "sudo mkdir -p $(dir $(INSTALLED_PERF_TOOL)) && sudo cp -f $(PERF_TOOL) $(INSTALLED_PERF_TOOL)" > $@
+	$(VAGRANT) up --provider=libvirt
+	$(VAGRANT) ssh -c "cd $(SHARED_VAGRANT_DIR) && make software/kernel"
+	$(VAGRANT) ssh -c "sudo mkdir -p $(dir $(INSTALLED_PERF_TOOL)) && sudo cp -f $(PERF_TOOL) $(INSTALLED_PERF_TOOL)"
 	$(VAGRANT) ssh -c "uname -a && perf --version" > $@
 	$(VAGRANT_HALT)
 
