@@ -1,7 +1,7 @@
 [submodule "linux"]
-    path = linux
+	path = linux/source
     url = git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git
     branch = linux-5.4.y
 [submodule "qemu"]
-	path = qemu
+	path = qemu/source
 	url = https://gitlab.com/qemu-project/qemu.git

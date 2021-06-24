@@ -16,9 +16,9 @@ CUSTOM_VAGRANT_DIR := $(ROOT_DIR)/$(CUSTOM_VAGRANT_NAME)
 # change the directory where Vagrant stores global state because it is set to ~/.vagrant.d by default,
 # and this causes conflicts between servers as the ~ directory is mounted on NFS.
 export VAGRANT_HOME := $(ROOT_DIR)/.vagrant.d
-LINUX_SOURCE_DIR := $(ROOT_DIR)/linux
-LINUX_BUILD_DIR := $(ROOT_DIR)/build
-LINUX_INSTALL_DIR := $(ROOT_DIR)/install
+LINUX_SOURCE_DIR := $(ROOT_DIR)/linux/source
+LINUX_BUILD_DIR := $(ROOT_DIR)/linux/build
+LINUX_INSTALL_DIR := $(ROOT_DIR)/linux/install
 CUSTOM_KERNEL_NAME := custom
 # choose a specific linux kernel version with "cd linux && git checkout tags/v5.4"
 BASELINE_KERNEL_VERSION := 5.4
@@ -26,8 +26,8 @@ LAST_STABLE_VERSION := 118
 KERNEL_VERSION := $(BASELINE_KERNEL_VERSION).$(LAST_STABLE_VERSION)
 # we can also extract the kernel version from the linux source tree via "cd linux && make kernelversion"
 # but this is problematic because $(LINUX_SOURCE_DIR) is empty right after "git clone"
-QEMU_SOURCE_DIR := $(ROOT_DIR)/qemu
-QEMU_BUILD_DIR := $(ROOT_DIR)/qemu-build
+QEMU_SOURCE_DIR := $(ROOT_DIR)/qemu/source
+QEMU_BUILD_DIR := $(ROOT_DIR)/qemu/build
 
 ##### Scripts and commands #####
 APT_INSTALL := sudo apt install -y
