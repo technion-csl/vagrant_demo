@@ -33,6 +33,9 @@ QEMU_BUILD_DIR := $(ROOT_DIR)/qemu-build
 APT_INSTALL := sudo apt install -y
 APT_REMOVE := sudo apt purge -y
 VAGRANT := vagrant
+VAGRANT_UP := $(VAGRANT) up --provider=libvirt
+VAGRANT_HALT := $(VAGRANT) halt || $(VAGRANT) halt --force
+VAGRANT_DESTROY := $(VAGRANT) destroy --force
 # more about the plugin: https://github.com/vagrant-libvirt/vagrant-libvirt
 MAKE_LINUX := make -C $(LINUX_SOURCE_DIR) --jobs=$$(nproc) O=$(LINUX_BUILD_DIR)
 
@@ -63,11 +66,11 @@ all: $(FLAG)
 
 $(FLAG): $(CUSTOM_VAGRANTFILE) $(VMLINUZ) $(INITRD) $(PERF_TOOL) $(QEMU_EXECUTABLE)
 	cd $(CUSTOM_VAGRANT_DIR)
-	$(VAGRANT) up --provider=libvirt
+	$(VAGRANT_UP)
 	$(VAGRANT) ssh -c "cd $(SHARED_VAGRANT_DIR) && make software/kernel" > $@
 	$(VAGRANT) ssh -c "sudo mkdir -p $(dir $(INSTALLED_PERF_TOOL)) && sudo cp -f $(PERF_TOOL) $(INSTALLED_PERF_TOOL)" > $@
 	$(VAGRANT) ssh -c "uname -a && perf --version" > $@
-	$(VAGRANT) halt
+	$(VAGRANT_HALT)
 
 $(INSTALLED_PERF_TOOL): $(PERF_TOOL)
 	sudo mkdir -p $(dir $@)
@@ -78,16 +81,16 @@ $(INSTALLED_PERF_TOOL): $(PERF_TOOL)
 
 $(INITRD): $(VMLINUZ)
 	cd $(BASELINE_VAGRANT_DIR)
-	$(VAGRANT) up --provider=libvirt
+	$(VAGRANT_UP)
 	$(VAGRANT) ssh -c "cp /boot/$(notdir $@) $@"
-	$(VAGRANT) halt
+	$(VAGRANT_HALT)
 
 $(VMLINUZ): $(LINUX_DEB_PACKAGE) | $(LINUX_INSTALL_DIR)
 	cd $(BASELINE_VAGRANT_DIR)
-	$(VAGRANT) up --provider=libvirt
+	$(VAGRANT_UP)
 	$(VAGRANT) ssh -c "sudo dpkg --install $<"
 	$(VAGRANT) ssh -c "cp /boot/$(notdir $@) $@"
-	$(VAGRANT) halt
+	$(VAGRANT_HALT)
 
 $(LINUX_DEB_PACKAGE): $(BZIMAGE)
 	$(APT_INSTALL) build-essential
@@ -129,17 +132,17 @@ $(CUSTOM_VAGRANTFILE): $(PROC_CMDLINE) | $(CUSTOM_VAGRANT_DIR)
 # prevent this target from running concurrently with $(PROC_CMDLINE) by depending on it
 $(BASELINE_LINUX_CONFIG): $(PROC_CMDLINE)
 	cd $(BASELINE_VAGRANT_DIR)
-	$(VAGRANT) up --provider=libvirt
+	$(VAGRANT_UP)
 	# use bash single quotes to avoid the $(uname -r) expansion in the host
 	$(VAGRANT) ssh -c 'cat /boot/config-$$(uname -r)' > $@
-	$(VAGRANT) halt
+	$(VAGRANT_HALT)
 	dos2unix $@
 
 $(PROC_CMDLINE): | software/vagrant
 	cd $(BASELINE_VAGRANT_DIR)
-	$(VAGRANT) up --provider=libvirt
+	$(VAGRANT_UP)
 	$(VAGRANT) ssh -c "cat /proc/cmdline" > $@
-	$(VAGRANT) halt
+	$(VAGRANT_HALT)
 	dos2unix $@
 
 # create the required directories when we need them (same recipe for multiple targets)
@@ -151,15 +154,15 @@ ssh-baseline-vagrant: | software/vagrant
 	# Fresh Vagrantfiles can be created through: vagrant init generic/ubuntu2004
 	# where generic/ubuntu2004 is the box name (all boxes are at: https://app.vagrantup.com/boxes/search)
 	cd $(BASELINE_VAGRANT_DIR)
-	$(VAGRANT) up --provider=libvirt #--debug
+	$(VAGRANT_UP) #--debug
 	$(VAGRANT) ssh
-	$(VAGRANT) halt
+	$(VAGRANT_HALT)
 
 ssh-custom-vagrant: $(CUSTOM_VAGRANTFILE) $(VMLINUZ)
 	cd $(CUSTOM_VAGRANT_DIR)
-	$(VAGRANT) up --provider=libvirt #--debug
+	$(VAGRANT_UP) #--debug
 	$(VAGRANT) ssh
-	$(VAGRANT) halt
+	$(VAGRANT_HALT)
 
 $(LINUX_MAKEFILE):
 	git submodule update --init --progress linux
@@ -197,17 +200,15 @@ software/qemu: | software/kernel
 
 clean-baseline-vagrant:
 	cd $(BASELINE_VAGRANT_DIR)
-	$(VAGRANT) halt
-	$(VAGRANT) destroy --force
-	# delete the VM manually through virsh in case vagrant destroy doesn't work
-	virsh undefine $(USER)_$(BASELINE_VAGRANT_NAME)
+	$(VAGRANT_HALT)
+	# if "vagrant destory" doesn't work, delete the VM via libvirt
+	$(VAGRANT_DESTROY) || virsh undefine $(USER)_$(BASELINE_VAGRANT_NAME)
 
 clean-custom-vagrant:
 	cd $(CUSTOM_VAGRANT_DIR)
-	$(VAGRANT) halt
-	$(VAGRANT) destroy --force
-	# delete the VM manually through virsh in case vagrant destroy doesn't work
-	virsh undefine $(USER)_$(CUSTOM_VAGRANT_NAME)
+	$(VAGRANT_HALT)
+	# if "vagrant destory" doesn't work, delete the VM via libvirt
+	$(VAGRANT_DESTROY) || virsh undefine $(USER)_$(CUSTOM_VAGRANT_NAME)
 
 clean: clean-baseline-vagrant clean-custom-vagrant
 	rm -f $(PROC_CMDLINE) $(BASELINE_LINUX_CONFIG)
