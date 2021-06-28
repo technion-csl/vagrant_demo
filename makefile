@@ -210,6 +210,7 @@ clean-custom-vagrant:
 	$(VAGRANT_HALT)
 	# if "vagrant destory" doesn't work, delete the VM via libvirt
 	$(VAGRANT_DESTROY) || virsh undefine $(USER)_$(CUSTOM_VAGRANT_NAME)
+	rm -rf $(CUSTOM_VAGRANTFILE)
 
 clean: clean-baseline-vagrant clean-custom-vagrant
 	rm -f $(PROC_CMDLINE) $(BASELINE_LINUX_CONFIG)
