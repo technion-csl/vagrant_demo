@@ -5,8 +5,12 @@ set -e
 
 function installLibvirt {
     sudo apt install -y cpu-checker qemu-kvm libvirt-clients libvirt-dev libvirt-daemon-system
-    sudo modprobe kvm kvm_intel
-    sudo chmod a+rw /dev/kvm
+    kvm_device=/dev/kvm
+    if [ ! -f $kvm_device ]; then
+        sudo modprobe --remove kvm-intel kvm # kvm_intel should be removed first because it uses kvm
+    fi
+    sudo modprobe --all kvm kvm_intel # --all to load multiple modules with the same command
+    sudo chmod a+rw $kvm_device
     sudo chmod a+rw /var/run/libvirt/libvirt-sock
     sudo systemctl start libvirtd
 }
