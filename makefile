@@ -22,7 +22,7 @@ LINUX_INSTALL_DIR := $(ROOT_DIR)/linux/install
 CUSTOM_KERNEL_NAME := custom
 # choose a specific linux kernel version with "cd linux && git checkout tags/v5.4"
 BASELINE_KERNEL_VERSION := 5.4
-LAST_STABLE_VERSION := 118
+LAST_STABLE_VERSION := 129
 KERNEL_VERSION := $(BASELINE_KERNEL_VERSION).$(LAST_STABLE_VERSION)
 # we can also extract the kernel version from the linux source tree via "cd linux && make kernelversion"
 # but this is problematic because $(LINUX_SOURCE_DIR) is empty right after "git clone"
