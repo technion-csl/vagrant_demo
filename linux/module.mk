@@ -30,6 +30,8 @@ MAKE_LINUX := make -C $(LINUX_SOURCE_DIR) --jobs=$$(nproc) O=$(LINUX_BUILD_DIR)
 
 .PHONY: linux linux/prerequisites linux/clean
 
+linux: $(VMLINUZ) $(INITRD) $(PERF_TOOL)
+
 $(INSTALLED_PERF_TOOL): $(PERF_TOOL)
 	sudo mkdir -p $(dir $@)
 	sudo cp -f $< $@
