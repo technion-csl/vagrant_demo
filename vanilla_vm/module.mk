@@ -25,7 +25,7 @@ $(VANILLA_VM_LINUX_CONFIG): $(PROC_CMDLINE)
 	$(VAGRANT_HALT)
 	dos2unix $@
 
-$(PROC_CMDLINE): | vagrant-prerequisites
+$(PROC_CMDLINE): | vagrant
 	cd $(VANILLA_VM_DIR)
 	$(VAGRANT_UP)
 	$(VAGRANT) ssh -c "cat /proc/cmdline" > $@

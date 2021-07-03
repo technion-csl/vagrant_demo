@@ -90,5 +90,5 @@ linux/clean:
 	$(MAKE_LINUX) mrproper
 	rm -rf $(LINUX_BUILD_DIR)
 	rm -rf $(LINUX_INSTALL_DIR)
-	rm -rf *1_amd64.deb *1_amd64.buildinfo *1_amd64.changes # the files created by "make bindeb-pkg"
+	cd linux && rm -f *1_amd64.deb *1_amd64.buildinfo *1_amd64.changes # the files created by "make bindeb-pkg"
 
