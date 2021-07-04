@@ -15,7 +15,7 @@ CUSTOM_VM_FLAG := $(CUSTOM_VM_DIR)/flag
 
 custom_vm: $(CUSTOM_VM_FLAG)
 
-$(CUSTOM_VM_FLAG): $(CUSTOM_VM_VAGRANTFILE) linux qemu
+$(CUSTOM_VM_FLAG): $(CUSTOM_VM_VAGRANTFILE) | linux qemu
 	cd $(CUSTOM_VM_DIR)
 	$(VAGRANT_UP)
 	$(VAGRANT) ssh -c "hostname" > $@
@@ -26,13 +26,12 @@ $(CUSTOM_VM_VAGRANTFILE): $(VANILLA_VM_PROC_CMDLINE)
 	proc_cmdline=$$(cat $(VANILLA_VM_PROC_CMDLINE))
 	[[ "$$proc_cmdline" =~ (.*)root=(.*) ]]
 	root_device=$${BASH_REMATCH[2]}
-	sed -i "s,#libvirt.emulator_path =,libvirt.emulator_path = \"$(QEMU_EXECUTABLE)\",g" $@
-	sed -i "s,#libvirt.kernel =,libvirt.kernel = \"$(VMLINUZ)\",g" $@
-	sed -i "s,#libvirt.initrd =,libvirt.initrd = \"$(INITRD)\",g" $@
-	sed -i "s,#libvirt.cmd_line =,libvirt.cmd_line =,g" $@
+	sed -i "s,emulator_path =,emulator_path = \"$(QEMU_EXECUTABLE)\",g" $@
+	sed -i "s,kernel =,kernel = \"$(VMLINUZ)\",g" $@
+	sed -i "s,initrd =,initrd = \"$(INITRD)\",g" $@
 	sed -i "s,ROOT_DEVICE,$$root_device,g" $@
 
-custom_vm/ssh: $(CUSTOM_VM_VAGRANTFILE) linux qemu
+custom_vm/ssh: $(CUSTOM_VM_VAGRANTFILE) | linux qemu
 	cd $(CUSTOM_VM_DIR)
 	$(VAGRANT_UP) #--debug
 	$(VAGRANT) ssh

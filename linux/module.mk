@@ -59,7 +59,7 @@ $(BZIMAGE): $(LINUX_CONFIG) | linux/prerequisites
 	$(MAKE_LINUX)
 
 $(LINUX_CONFIG): $(VANILLA_VM_LINUX_CONFIG) $(LINUX_MAKEFILE) | $(LINUX_BUILD_DIR)
-	# take the config of the vagrant distribution as the baseline
+	# take the config of vanilla_vm as the baseline
 	cp -f $< $@
 	# change dir before calling the config script (it works only from the source dir)
 	cd $(LINUX_SOURCE_DIR)

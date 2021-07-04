@@ -27,7 +27,7 @@ FLAG := $(ROOT_DIR)/flag
 .PHONY: all clean
 all: $(FLAG)
 
-$(FLAG): $(SUBMODULES)
+$(FLAG): | $(SUBMODULES)
 	cd $(CUSTOM_VM_DIR)
 	$(VAGRANT_UP)
 	$(VAGRANT) ssh -c "cd $(SHARED_VAGRANT_DIR) && make linux/prerequisites"

@@ -22,7 +22,7 @@ $(VANILLA_VM_FLAG):
 	$(VAGRANT) ssh -c "hostname" > $@
 	$(VAGRANT_HALT)
 
-$(VANILLA_VM_LINUX_CONFIG): vagrant
+$(VANILLA_VM_LINUX_CONFIG): | vagrant
 	cd $(VANILLA_VM_DIR)
 	$(VAGRANT_UP)
 	# use bash single quotes to avoid the $(uname -r) expansion in the host
@@ -30,7 +30,7 @@ $(VANILLA_VM_LINUX_CONFIG): vagrant
 	$(VAGRANT_HALT)
 	dos2unix $@
 
-$(VANILLA_VM_PROC_CMDLINE): vagrant
+$(VANILLA_VM_PROC_CMDLINE): | vagrant
 	cd $(VANILLA_VM_DIR)
 	$(VAGRANT_UP)
 	$(VAGRANT) ssh -c "cat /proc/cmdline" > $@
