@@ -1,0 +1,13 @@
+common_vagrantfile = "../Vagrantfile.common"
+load common_vagrantfile if File.exists?(common_vagrantfile)
+
+Vagrant.configure("2") do |config|
+  # provider-specific options
+  config.vm.provider :libvirt do |libvirt|
+    libvirt.emulator_path =
+    libvirt.kernel =
+    libvirt.initrd =
+    libvirt.cmd_line = "root=ROOT_DEVICE"
+  end
+end
+

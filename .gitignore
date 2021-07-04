@@ -1,5 +1,5 @@
 .vagrant.d/
-vanilla_vm/.vagrant/
+.vagrant/
 vanilla_vm/.config
 vanilla_vm/proc_cmdline.txt
 linux/build/

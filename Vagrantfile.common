@@ -1,0 +1,31 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# This Vagrantfile defines the configuration of the VM that resides in the current directory.
+# Fresh Vagrantfiles can be created through: vagrant init generic/ubuntu2004
+# where generic/ubuntu2004 is the box name (all boxes are at: https://app.vagrantup.com/boxes/search)
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "generic/ubuntu2004"
+  config.vm.define ENV["USER"]
+
+  # Vagrant Libvirt Provider Documentation (https://github.com/vagrant-libvirt/vagrant-libvirt) says that:
+  # "Vagrant automatically syncs the project folder on the host to /vagrant in the guest."
+  # However, we found out that this is incorrect, so we define the project folder manually.
+  config.vm.synced_folder ENV["SHARED_VAGRANT_DIR"], ENV["SHARED_VAGRANT_DIR"], type: "nfs"
+
+  # provider-specific options
+  config.vm.provider :libvirt do |libvirt|
+    libvirt.cpus = 2
+    libvirt.memory = 8192 # MB
+    # the guest VM should see the host CPU with its exact features
+    libvirt.cpu_mode = "host-passthrough"
+    libvirt.cpu_fallback = "forbid"
+  end
+
+  config.vm.provision "shell", inline: <<-SHELL
+    export DEBIAN_FRONTEND=noninteractive
+    apt install -y git make
+  SHELL
+end
+
