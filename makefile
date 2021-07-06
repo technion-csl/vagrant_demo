@@ -39,10 +39,12 @@ clean: $(addsuffix /clean,$(SUBMODULES))
 
 include $(SUBMAKEFILES)
 
-$(info $(MAKEFILE_ENVIRONMENT_VARIABLES))
 # re-create the submakefile when this makefile is changed
 $(MAKEFILE_ENVIRONMENT_VARIABLES): $(BASH_ENVIRONMENT_VARIABLES) makefile
-	$< 2>&1 | sed 's/+\ //g' | sed '/^export/d' | sed 's/^/export /g' > $@
+	$< 2>&1	| sed 's/+ //g' | sed '/^export/!d' | sed "s/'//g" > $@
+	#1: remove leading "+ " from all lines
+	#2: delete all lines not starting with "export"
+	#3: remove ticks from bash strings because gnu make doesn't like them
 
 # empty recipes to prevent make from remaking the makefile and its included files
 # https://www.gnu.org/software/make/manual/html_node/Remaking-Makefiles.html
