@@ -20,6 +20,7 @@ export APT_REMOVE=sudo apt purge -y
 # the following list should preserve a topological ordering, i.e., if module B
 # uses variables defined in module A, than module A should come before module B
 SUBMODULES := libvirt vagrant vanilla_vm linux qemu custom_vm
+SUBMAKEFILES := $(addsuffix /module.mk,$(SUBMODULES))
 FLAG := $(ROOT_DIR)/flag
 
 ##### Recipes #####
@@ -41,5 +42,10 @@ $(FLAG): | $(SUBMODULES)
 clean: $(addsuffix /clean,$(SUBMODULES))
 	rm -rf $(FLAG)
 
--include $(patsubst %,%/module.mk,$(SUBMODULES))
+-include $(SUBMAKEFILES)
+
+# empty recipes to prevent make from remaking the makefile and its included files
+# https://www.gnu.org/software/make/manual/html_node/Remaking-Makefiles.html
+makefile: ;
+$(SUBMAKEFILES): ;
 

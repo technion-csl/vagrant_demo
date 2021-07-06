@@ -2,6 +2,7 @@
 .vagrant/
 vanilla_vm/.config
 vanilla_vm/proc_cmdline.txt
+custom_vm/Vagrantfile
 linux/build/
 linux/install/
 qemu/build/
