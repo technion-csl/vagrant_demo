@@ -1,3 +1,4 @@
+environment_variables.mk
 .vagrant.d/
 .vagrant/
 vanilla_vm/.config

@@ -1,4 +1,4 @@
-##### Global constants #####
+##### Constants #####
 
 LINUX_SOURCE_DIR := $(ROOT_DIR)/linux/source
 LINUX_BUILD_DIR := $(ROOT_DIR)/linux/build

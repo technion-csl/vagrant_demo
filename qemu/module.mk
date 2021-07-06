@@ -1,4 +1,4 @@
-##### Global constants #####
+##### Constants #####
 
 QEMU_SOURCE_DIR := $(ROOT_DIR)/qemu/source
 QEMU_BUILD_DIR := $(ROOT_DIR)/qemu/build

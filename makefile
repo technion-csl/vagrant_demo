@@ -4,16 +4,11 @@ SHELL := /bin/bash
 # invoke recipes as if the shell had been passed the -e flag: the first failing command in a recipe will cause the recipe to fail immediately
 .POSIX:
 
-##### Global constants #####
-
-export ROOT_DIR=$(PWD)
-# don't modify this variable because we rely on identical paths in the guest and host
-export SHARED_VAGRANT_DIR=$(ROOT_DIR)
-# change the directory where Vagrant stores global state because it is set to ~/.vagrant.d by default,
-# and this causes conflicts between servers as the ~ directory is mounted on NFS.
-export VAGRANT_HOME=$(ROOT_DIR)/.vagrant.d
-export APT_INSTALL=sudo apt install -y
-export APT_REMOVE=sudo apt purge -y
+# source the bash environment variables as global makefile variables
+BASH_ENVIRONMENT_VARIABLES := environment_variables.sh
+MAKEFILE_ENVIRONMENT_VARIABLES := environment_variables.mk
+# note the usage of "-" to prevent "make" from failing when the included file doesn't yet exist
+-include $(MAKEFILE_ENVIRONMENT_VARIABLES)
 
 ##### Targets (== files) #####
 
@@ -42,7 +37,12 @@ $(FLAG): | $(SUBMODULES)
 clean: $(addsuffix /clean,$(SUBMODULES))
 	rm -rf $(FLAG)
 
--include $(SUBMAKEFILES)
+include $(SUBMAKEFILES)
+
+$(info $(MAKEFILE_ENVIRONMENT_VARIABLES))
+# re-create the submakefile when this makefile is changed
+$(MAKEFILE_ENVIRONMENT_VARIABLES): $(BASH_ENVIRONMENT_VARIABLES) makefile
+	$< 2>&1 | sed 's/+\ //g' | sed '/^export/d' | sed 's/^/export /g' > $@
 
 # empty recipes to prevent make from remaking the makefile and its included files
 # https://www.gnu.org/software/make/manual/html_node/Remaking-Makefiles.html

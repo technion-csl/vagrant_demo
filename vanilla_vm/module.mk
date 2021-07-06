@@ -1,4 +1,4 @@
-##### Global constants #####
+##### Constants #####
 
 VANILLA_VM_NAME := vanilla_vm
 VANILLA_VM_DIR := $(ROOT_DIR)/$(VANILLA_VM_NAME)

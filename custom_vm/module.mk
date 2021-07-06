@@ -1,4 +1,4 @@
-##### Global constants #####
+##### Constants #####
 
 CUSTOM_VM_NAME := custom_vm
 CUSTOM_VM_DIR := $(ROOT_DIR)/$(CUSTOM_VM_NAME)
