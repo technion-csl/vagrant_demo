@@ -1,7 +1,7 @@
 #! /bin/bash
 
-# exit immediately if a command exits with a non-zero status
-set -e
+# use "bash strict mode" (http://redsymbol.net/articles/unofficial-bash-strict-mode/)
+set -euo pipefail
 
 # install the dependencies recommended in https://github.com/vagrant-libvirt/vagrant-libvirt#readme
 apt_install="sudo apt install -y"

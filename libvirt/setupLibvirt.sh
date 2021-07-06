@@ -1,7 +1,7 @@
 #! /bin/bash
 
-# exit immediately if a command exits with a non-zero status
-set -e
+# use "bash strict mode" (http://redsymbol.net/articles/unofficial-bash-strict-mode/)
+set -euo pipefail
 
 function installLibvirt {
     sudo apt install -y cpu-checker qemu-kvm libvirt-clients libvirt-dev libvirt-daemon-system
