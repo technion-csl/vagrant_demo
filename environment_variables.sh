@@ -1,5 +1,4 @@
 #! /bin/bash
-set -x # print the commands as they execute
 export ROOT_DIR=$PWD
 # don't modify this variable because we rely on identical paths in the guest and host
 export SHARED_VAGRANT_DIR=$ROOT_DIR

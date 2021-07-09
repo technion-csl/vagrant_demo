@@ -41,7 +41,8 @@ include $(SUBMAKEFILES)
 
 # re-create the submakefile when this makefile is changed
 $(MAKEFILE_ENVIRONMENT_VARIABLES): $(BASH_ENVIRONMENT_VARIABLES) makefile
-	$< 2>&1	| sed 's/+ //g' | sed '/^export/!d' | sed "s/'//g" > $@
+	# invoke the shell script and print the commands as they execute
+	bash -o xtrace $< 2>&1 | sed 's/+ //g' | sed '/^export/!d' | sed "s/'//g" > $@
 	#1: remove leading "+ " from all lines
 	#2: delete all lines not starting with "export"
 	#3: remove ticks from bash strings because gnu make doesn't like them
