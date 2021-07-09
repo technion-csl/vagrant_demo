@@ -3,7 +3,7 @@ environment_variables.mk
 .vagrant/
 vanilla_vm/.config
 vanilla_vm/proc_cmdline.txt
-custom_vm/Vagrantfile
+custom_vm/Vagrantfile.custom
 linux/build/
 linux/install/
 qemu/build/

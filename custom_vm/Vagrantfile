@@ -1,0 +1,6 @@
+common_vagrantfile = "../Vagrantfile.common"
+load common_vagrantfile if File.exists?(common_vagrantfile)
+
+custom_vagrantfile = "./Vagrantfile.custom"
+load custom_vagrantfile if File.exists?(custom_vagrantfile)
+

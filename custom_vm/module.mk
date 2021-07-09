@@ -6,7 +6,7 @@ CUSTOM_VM_VAGRANTFILE_TEMPLATE := $(ROOT_DIR)/$(CUSTOM_VM_NAME)/Vagrantfile.temp
 
 ##### Targets (== files) #####
 
-CUSTOM_VM_VAGRANTFILE := $(CUSTOM_VM_DIR)/Vagrantfile
+CUSTOM_VM_VAGRANTFILE := $(CUSTOM_VM_DIR)/Vagrantfile.custom
 CUSTOM_VM_FLAG := $(CUSTOM_VM_DIR)/flag
 
 ##### Recipes #####
