@@ -19,28 +19,28 @@ vanilla_vm: $(VANILLA_VM_FLAG)
 $(VANILLA_VM_FLAG):
 	cd $(VANILLA_VM_DIR)
 	$(VAGRANT_UP)
-	$(VAGRANT) ssh -c "hostname" > $@
+	$(VAGRANT_SSH) -c "hostname" > $@
 	$(VAGRANT_HALT)
 
 $(VANILLA_VM_LINUX_CONFIG): | vagrant
 	cd $(VANILLA_VM_DIR)
 	$(VAGRANT_UP)
 	# use bash single quotes to avoid the $(uname -r) expansion in the host
-	$(VAGRANT) ssh -c 'cat /boot/config-$$(uname -r)' > $@
+	$(VAGRANT_SSH) -c 'cat /boot/config-$$(uname -r)' > $@
 	$(VAGRANT_HALT)
 	dos2unix $@
 
 $(VANILLA_VM_PROC_CMDLINE): | vagrant
 	cd $(VANILLA_VM_DIR)
 	$(VAGRANT_UP)
-	$(VAGRANT) ssh -c "cat /proc/cmdline" > $@
+	$(VAGRANT_SSH) -c "cat /proc/cmdline" > $@
 	$(VAGRANT_HALT)
 	dos2unix $@
 
 vanilla_vm/ssh:
 	cd $(VANILLA_VM_DIR)
 	$(VAGRANT_UP) #--debug
-	$(VAGRANT) ssh
+	$(VAGRANT_SSH)
 	$(VAGRANT_HALT)
 
 vanilla_vm/clean:

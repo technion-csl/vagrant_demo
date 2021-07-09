@@ -26,9 +26,9 @@ all: $(FLAG)
 $(FLAG): | $(SUBMODULES)
 	cd $(CUSTOM_VM_DIR)
 	$(VAGRANT_UP)
-	$(VAGRANT) ssh -c "cd $(SHARED_VAGRANT_DIR) && make linux/prerequisites"
-	$(VAGRANT) ssh -c "sudo mkdir -p $(dir $(INSTALLED_PERF_TOOL)) && sudo cp -f $(PERF_TOOL) $(INSTALLED_PERF_TOOL)"
-	$(VAGRANT) ssh -c "uname -a && perf --version" > $@
+	$(VAGRANT_SSH) -c "cd $(SHARED_VAGRANT_DIR) && make linux/prerequisites"
+	$(VAGRANT_SSH) -c "sudo mkdir -p $(dir $(INSTALLED_PERF_TOOL)) && sudo cp -f $(PERF_TOOL) $(INSTALLED_PERF_TOOL)"
+	$(VAGRANT_SSH) -c "uname -a && perf --version" > $@
 	$(VAGRANT_HALT)
 
 # ignore errors when executing these two recipes (the VMs may not exist so deleting them may fail)

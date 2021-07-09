@@ -8,7 +8,7 @@ $APT_INSTALL vagrant ruby-libvirt
 $APT_INSTALL qemu libvirt-daemon-system libvirt-clients ebtables dnsmasq-base
 $APT_INSTALL libxslt-dev libxml2-dev libvirt-dev zlib1g-dev ruby-dev
 
-# install the libvirt plugin
+# install the libvirt plugin: https://github.com/vagrant-libvirt/vagrant-libvirt
 if [ -z "$VAGRANT_HOME" ]; then
     echo "Error: VAGRANT_HOME is undefined (but running vagrant implicitly assumes it is defined)"
 fi

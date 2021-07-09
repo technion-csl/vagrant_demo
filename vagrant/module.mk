@@ -1,10 +1,6 @@
 ##### Scripts and commands #####
 
 VAGRANT := vagrant
-VAGRANT_UP := $(VAGRANT) up --provider=libvirt
-VAGRANT_HALT := $(VAGRANT) halt || $(VAGRANT) halt --force
-VAGRANT_DESTROY := $(VAGRANT) destroy --force
-# more about the plugin: https://github.com/vagrant-libvirt/vagrant-libvirt
 
 ##### Recipes #####
 

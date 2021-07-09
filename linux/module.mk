@@ -42,14 +42,14 @@ $(PERF_TOOL): $(LINUX_CONFIG)
 $(INITRD): $(VMLINUZ)
 	cd $(VANILLA_VM_DIR)
 	$(VAGRANT_UP)
-	$(VAGRANT) ssh -c "cp /boot/$(notdir $@) $@"
+	$(VAGRANT_SSH) -c "cp /boot/$(notdir $@) $@"
 	$(VAGRANT_HALT)
 
 $(VMLINUZ): $(LINUX_DEB_PACKAGE) | $(LINUX_INSTALL_DIR)
 	cd $(VANILLA_VM_DIR)
 	$(VAGRANT_UP)
-	$(VAGRANT) ssh -c "sudo dpkg --install $<"
-	$(VAGRANT) ssh -c "cp /boot/$(notdir $@) $@"
+	$(VAGRANT_SSH) -c "sudo dpkg --install $<"
+	$(VAGRANT_SSH) -c "cp /boot/$(notdir $@) $@"
 	$(VAGRANT_HALT)
 
 $(LINUX_DEB_PACKAGE): $(BZIMAGE)

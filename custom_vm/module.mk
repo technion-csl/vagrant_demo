@@ -18,7 +18,7 @@ custom_vm: $(CUSTOM_VM_FLAG)
 $(CUSTOM_VM_FLAG): $(CUSTOM_VM_VAGRANTFILE) | linux qemu
 	cd $(CUSTOM_VM_DIR)
 	$(VAGRANT_UP)
-	$(VAGRANT) ssh -c "hostname" > $@
+	$(VAGRANT_SSH) -c "hostname" > $@
 	$(VAGRANT_HALT)
 
 $(CUSTOM_VM_VAGRANTFILE): $(VANILLA_VM_PROC_CMDLINE)
@@ -34,7 +34,7 @@ $(CUSTOM_VM_VAGRANTFILE): $(VANILLA_VM_PROC_CMDLINE)
 custom_vm/ssh: $(CUSTOM_VM_VAGRANTFILE) | linux qemu
 	cd $(CUSTOM_VM_DIR)
 	$(VAGRANT_UP) #--debug
-	$(VAGRANT) ssh
+	$(VAGRANT_SSH)
 	$(VAGRANT_HALT)
 
 custom_vm/clean:
