@@ -31,9 +31,6 @@ $(FLAG): | $(SUBMODULES)
 	$(VAGRANT_SSH) -c "uname -a && perf --version" > $@
 	$(VAGRANT_HALT)
 
-# ignore errors when executing these two recipes (the VMs may not exist so deleting them may fail)
-#.IGNORE: clean-baseline-vagrant clean-custom-vagrant
-
 clean: $(addsuffix /clean,$(SUBMODULES))
 	rm -rf $(FLAG)
 
