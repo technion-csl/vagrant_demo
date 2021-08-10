@@ -1,6 +1,6 @@
-[submodule "linux"]
+[submodule "linux/source"]
 	path = linux/source
-	url = git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git
-[submodule "qemu"]
+	url = ../linux.git
+[submodule "qemu/source"]
 	path = qemu/source
-	url = https://gitlab.com/qemu-project/qemu.git
+	url = ../qemu.git

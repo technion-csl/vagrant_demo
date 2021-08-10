@@ -10,6 +10,15 @@ MAKEFILE_ENVIRONMENT_VARIABLES := environment_variables.mk
 # note the usage of "-" to prevent "make" from failing when the included file doesn't yet exist
 -include $(MAKEFILE_ENVIRONMENT_VARIABLES)
 
+#TODO: sync all branches (not just master) between upstream and origin
+define FETCH_UPSTREAM :=
+current_head=$$(git rev-parse HEAD)
+git checkout master
+git pull upstream master
+git push origin master --tags
+git checkout $$current_head
+endef
+
 ##### Targets (== files) #####
 
 # the following list should preserve a topological ordering, i.e., if module B

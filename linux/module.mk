@@ -10,6 +10,7 @@ KERNEL_VERSION := $(MAJOR_KERNEL_VERSION).$(MINOR_KERNEL_VERSION)
 # we can also extract the kernel version from the linux source tree via "cd linux && make kernelversion"
 # but this is problematic because $(LINUX_SOURCE_DIR) is empty right after "git clone"
 CUSTOM_KERNEL_NAME := custom
+LINUX_OFFICIAL_GIT_REPO := https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git
 
 ##### Targets (== files) #####
 
@@ -28,7 +29,7 @@ MAKE_LINUX := make -C $(LINUX_SOURCE_DIR) --jobs=$$(nproc) O=$(LINUX_BUILD_DIR)
 
 ##### Recipes #####
 
-.PHONY: linux linux/prerequisites linux/clean
+.PHONY: linux linux/prerequisites linux/clean linux/fetch-upstream
 
 linux: $(VMLINUZ) $(INITRD) $(PERF_TOOL)
 
@@ -91,4 +92,11 @@ linux/clean:
 	rm -rf $(LINUX_BUILD_DIR)
 	rm -rf $(LINUX_INSTALL_DIR)
 	cd linux && rm -f *1_amd64.deb *1_amd64.buildinfo *1_amd64.changes # the files created by "make bindeb-pkg"
+
+linux/fetch-upstream:
+	cd $(LINUX_SOURCE_DIR)
+	if [[ $$(git remote | grep upstream) == "" ]] ; then
+		git remote add upstream $(LINUX_OFFICIAL_GIT_REPO)
+	fi
+	$(FETCH_UPSTREAM)
 
