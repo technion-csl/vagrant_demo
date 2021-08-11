@@ -15,13 +15,6 @@ function installLibvirt {
     sudo systemctl start libvirtd
 }
 
-function testLibvirt {
-    if [[ "$(virt-host-validate qemu)" == *"FAIL"* ]]; then
-        echo "There is a problem in the host virtualization setup"
-        exit -1 # stop the script
-    fi
-}
-
 function editLibvirtSettings {
     current_settings_file=/etc/libvirt/$1
     script_directory=$(dirname "$0")
@@ -38,8 +31,28 @@ function editLibvirtSettings {
     sudo systemctl restart libvirtd
 }
 
+function uninstallApparmor {
+    status=$(dpkg-query --show --showformat='${Status}' apparmor)
+    if [[ $status == "install ok installed" ]]; then
+        echo "Apparmor is currently installed. Going to uninstall it via:"
+        sudo apt-get purge -y apparmor
+        echo "Please reboot the machine for this change to take effect."
+        exit -1
+    else
+        echo "Apparmor is not installed."
+    fi
+}
+
+function testLibvirt {
+    if [[ "$(virt-host-validate qemu)" == *"FAIL"* ]]; then
+        echo "There is a problem in the host virtualization setup"
+        exit -1 # stop the script
+    fi
+}
+
 installLibvirt
 editLibvirtSettings qemu.conf
 editLibvirtSettings libvirtd.conf
+uninstallApparmor
 testLibvirt
 
