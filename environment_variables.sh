@@ -7,6 +7,7 @@ export SHARED_VAGRANT_DIR=$ROOT_DIR
 export VAGRANT_HOME=$ROOT_DIR/.vagrant.d
 export APT_INSTALL="sudo apt install -y"
 export APT_REMOVE="sudo apt purge -y"
+export APT_UPDATE="sudo apt update -y"
 export VAGRANT_UP="vagrant up --provider=libvirt"
 export VAGRANT_SSH="vagrant ssh"
 export VAGRANT_HALT="vagrant halt"
