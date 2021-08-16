@@ -19,6 +19,13 @@ function editLibvirtSettings {
     current_settings_file=/etc/libvirt/$1
     script_directory=$(dirname "$0")
     new_settings_file=$script_directory/$1
+
+    if [ ! -f $current_settings_file ]; then
+        echo copying the custom CSL settings into $current_settings_file...
+        sudo cp $new_settings_file $current_settings_file
+        return
+    fi
+
     grep_results=$(sudo grep "CSL settings" $current_settings_file || true)
     if [ -z "$grep_results" ]; then
         echo moving the current $current_settings_file settings to $current_settings_file.old...
@@ -28,7 +35,6 @@ function editLibvirtSettings {
     else
         echo the current $current_settings_file settings are OK!
     fi
-    sudo systemctl restart libvirtd
 }
 
 function uninstallApparmor {
@@ -54,5 +60,6 @@ installLibvirt
 editLibvirtSettings qemu.conf
 editLibvirtSettings libvirtd.conf
 uninstallApparmor
+sudo systemctl restart libvirtd
 testLibvirt
 
