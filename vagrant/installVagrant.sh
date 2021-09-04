@@ -1,7 +1,7 @@
 #! /bin/bash
 
 # use "bash strict mode" (http://redsymbol.net/articles/unofficial-bash-strict-mode/)
-set -euo pipefail
+set -xeuo pipefail
 
 # add the apt repository given in https://www.vagrantup.com/downloads
 curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
