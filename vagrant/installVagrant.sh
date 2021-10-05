@@ -5,8 +5,7 @@ set -euo pipefail
 
 # add the apt repository given in https://www.vagrantup.com/downloads
 curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
-sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-$APT_UPDATE
+sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" --update
 # install the dependencies recommended in https://github.com/vagrant-libvirt/vagrant-libvirt#readme
 $APT_INSTALL vagrant ruby-libvirt
 $APT_INSTALL qemu libvirt-daemon-system libvirt-clients ebtables dnsmasq-base
