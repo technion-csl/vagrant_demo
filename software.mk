@@ -1,4 +1,4 @@
-# Software packages that are prerequisites for libvirt, vagrant, and kernel build
+# Software packages that are prerequisites for libvirt, vagrant, and linux kernel build
 
 libvirt_prerequisites := cpu-checker qemu-kvm
 
@@ -14,14 +14,14 @@ vagrant_prerequisites += libxslt-dev libxml2-dev libvirt-dev ruby-dev
 # excluded zlib1g-dev because it is already required by qemu
 
 # taken from: https://phoenixnap.com/kb/build-linux-kernel
-kernel_prerequisites := fakeroot build-essential ncurses-dev xz-utils libssl-dev bc flex libelf-dev bison
+linux_prerequisites := fakeroot build-essential ncurses-dev xz-utils libssl-dev bc flex libelf-dev bison
 # taken from: https://stackoverflow.com/questions/61657707/btf-tmp-vmlinux-btf-pahole-pahole-is-not-available
-kernel_prerequisites += dwarves
+linux_prerequisites += dwarves
 # perf requires other libraries ("error while loading shared libraries...")
-kernel_prerequisites += libpython2.7 libbabeltrace-ctf1
+linux_prerequisites += libpython2.7 libbabeltrace-ctf1
 
 software_prerequisites := $(libvirt_prerequisites) $(qemu_prerequisites) $(vagrant_prerequisites) \
-	$(kernel_prerequisites)
+	$(linux_prerequisites)
 .PHONY: $(software_prerequisites)
 
 $(software_prerequisites): %:

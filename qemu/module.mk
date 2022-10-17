@@ -20,7 +20,7 @@ $(QEMU_EXECUTABLE): $(QEMU_MAKEFILE)
 	cd $(QEMU_BUILD_DIR)
 	make --jobs=$$(nproc)
 
-$(QEMU_MAKEFILE): $(QEMU_CONFIGURE) | $(QEMU_BUILD_DIR) $(qemu_prerequisites) $(kernel_prerequisites)
+$(QEMU_MAKEFILE): $(QEMU_CONFIGURE) | $(QEMU_BUILD_DIR) $(qemu_prerequisites) $(linux_prerequisites)
 	cd $(QEMU_BUILD_DIR)
 	$< --target-list=x86_64-softmmu
 	touch $@
