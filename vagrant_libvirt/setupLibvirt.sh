@@ -4,7 +4,6 @@
 set -euo pipefail
 
 function installLibvirt {
-    $APT_INSTALL cpu-checker qemu-kvm libvirt-clients libvirt-dev libvirt-daemon-system
     kvm_device=/dev/kvm
     if [ ! -c "$kvm_device" ]; then
         sudo modprobe --remove kvm-intel kvm # kvm_intel should be removed first because it uses kvm

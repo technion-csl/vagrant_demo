@@ -23,7 +23,7 @@ endef
 
 # the following list should preserve a topological ordering, i.e., if module B
 # uses variables defined in module A, than module A should come before module B
-SUBMODULES := libvirt vagrant vanilla_vm linux qemu custom_vm
+SUBMODULES := vagrant_libvirt vanilla_vm linux qemu custom_vm
 SUBMAKEFILES := $(addsuffix /module.mk,$(SUBMODULES))
 FLAG := $(ROOT_DIR)/flag
 
@@ -43,6 +43,7 @@ $(FLAG): | $(SUBMODULES)
 clean: $(addsuffix /clean,$(SUBMODULES))
 	rm -rf $(FLAG)
 
+include software.mk
 include $(SUBMAKEFILES)
 
 # re-create the submakefile when this makefile is changed
