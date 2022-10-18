@@ -5,7 +5,7 @@ LINUX_BUILD_DIR := $(ROOT_DIR)/linux/build
 LINUX_INSTALL_DIR := $(ROOT_DIR)/linux/install
 # choose a specific linux kernel version with "cd linux/source && git checkout tags/v5.4"
 MAJOR_KERNEL_VERSION := 5.4
-MINOR_KERNEL_VERSION := 139
+MINOR_KERNEL_VERSION := 219
 KERNEL_VERSION := $(MAJOR_KERNEL_VERSION).$(MINOR_KERNEL_VERSION)
 # we can also extract the kernel version from the linux source tree via "cd linux && make kernelversion"
 # but this is problematic because $(LINUX_SOURCE_DIR) is empty right after "git clone"
