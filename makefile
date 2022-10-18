@@ -14,7 +14,7 @@ MAKEFILE_ENVIRONMENT_VARIABLES := environment_variables.mk
 define FETCH_UPSTREAM :=
 current_head=$$(git rev-parse HEAD)
 git checkout master
-git pull upstream master
+git pull --all
 git push origin master --tags
 git checkout $$current_head
 endef
