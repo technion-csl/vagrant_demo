@@ -15,7 +15,7 @@ define FETCH_UPSTREAM :=
 current_head=$$(git rev-parse HEAD)
 git checkout master
 git pull --all
-git push origin master --tags
+git push origin --all
 git checkout $$current_head
 endef
 
